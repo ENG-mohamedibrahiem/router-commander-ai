@@ -1,76 +1,81 @@
 import 'protocol_classification.dart';
 
-/// Structured protocol-event logger contract.
+/// Structured logger for protocol-level events.
 ///
-/// The data layer calls this logger — never print() or Logger directly —
-/// so that protocol events are observable, testable, and filterable.
-abstract interface class ProtocolLogger {
-  /// A VERIFIED request/response cycle completed normally.
+/// Every log entry carries:
+///   - adapter name (e.g. 'ZTE', 'TP-Link')
+///   - operation name (e.g. 'login', 'readWanStatus')
+///   - classification (VERIFIED / ASSUMED / EXPERIMENTAL)
+///   - human-readable detail
+///
+/// In production, these logs help triage firmware compatibility issues
+/// without requiring a debugger attached to the device.
+final class ProtocolLogger {
+  const ProtocolLogger();
+
   void logVerifiedSuccess({
     required String adapter,
     required String operation,
     String? detail,
-  });
+  }) {
+    _emit(
+      level: '✅ VERIFIED',
+      adapter: adapter,
+      operation: operation,
+      message: detail ?? 'OK',
+    );
+  }
 
-  /// A protocol element with [classification] triggered its fallback.
-  /// This is not an error — it is expected variance. Log it clearly.
   void logFallback({
     required String adapter,
     required String operation,
     required ProtocolClassification classification,
     required String reason,
-    String? fallbackUsed,
-  });
+    required String fallbackUsed,
+  }) {
+    _emit(
+      level: '⚠️  ${classification.label}',
+      adapter: adapter,
+      operation: operation,
+      message: '$reason → fallback: $fallbackUsed',
+    );
+  }
 
-  /// A VERIFIED protocol contract was violated by the router.
-  /// This is always an error worth investigating.
   void logProtocolViolation({
     required String adapter,
     required String operation,
     required String reason,
     Object? rawResponse,
-  });
+  }) {
+    _emit(
+      level: '🚨 VIOLATION',
+      adapter: adapter,
+      operation: operation,
+      message:
+          '$reason${rawResponse != null ? ' | raw: $rawResponse' : ''}',
+    );
+  }
 
-  /// A capability was detected at runtime that changes behaviour.
   void logCapabilityDetected({
     required String adapter,
     required String capability,
     required String detectedValue,
-  });
-}
+  }) {
+    _emit(
+      level: '🔍 CAPABILITY',
+      adapter: adapter,
+      operation: capability,
+      message: 'detected → $detectedValue',
+    );
+  }
 
-/// No-op implementation used in tests that do not care about log output.
-final class SilentProtocolLogger implements ProtocolLogger {
-  const SilentProtocolLogger();
-
-  @override
-  void logVerifiedSuccess({
+  void _emit({
+    required String level,
     required String adapter,
     required String operation,
-    String? detail,
-  }) {}
-
-  @override
-  void logFallback({
-    required String adapter,
-    required String operation,
-    required ProtocolClassification classification,
-    required String reason,
-    String? fallbackUsed,
-  }) {}
-
-  @override
-  void logProtocolViolation({
-    required String adapter,
-    required String operation,
-    required String reason,
-    Object? rawResponse,
-  }) {}
-
-  @override
-  void logCapabilityDetected({
-    required String adapter,
-    required String capability,
-    required String detectedValue,
-  }) {}
+    required String message,
+  }) {
+    // ignore: avoid_print
+    print('[$level][$adapter][$operation] $message');
+  }
 }

@@ -1,38 +1,43 @@
+/// Represents the network address of a specific router.
+///
+/// [cacheKey] is used by [SessionStorageContract] implementations
+/// to key persisted sessions.
 class RouterEndpoint {
   const RouterEndpoint({
-    required this.baseUri,
-    this.displayName,
+    required this.host,
+    this.port = 80,
+    this.useHttps = false,
   });
 
-  factory RouterEndpoint.fromHost(
-    String host, {
-    bool secure = false,
-    int? port,
-    String? displayName,
-  }) {
-    final scheme = secure ? 'https' : 'http';
+  final String host;
+  final int port;
+  final bool useHttps;
 
-    return RouterEndpoint(
-      baseUri: Uri(
-        scheme: scheme,
-        host: host,
-        port: port ?? (secure ? 443 : 80),
-      ),
-      displayName: displayName,
-    );
+  String get scheme => useHttps ? 'https' : 'http';
+
+  /// Base URI without trailing slash.
+  String get baseUri {
+    final portSuffix =
+        (useHttps && port == 443) || (!useHttps && port == 80)
+            ? ''
+            : ':$port';
+    return '$scheme://$host$portSuffix';
   }
 
-  final Uri baseUri;
-  final String? displayName;
+  /// Stable key for session caching — excludes scheme to tolerate
+  /// http↔https switches on the same physical host.
+  String get cacheKey => '$host:$port';
 
-  String get host => baseUri.host;
+  @override
+  String toString() => baseUri;
 
-  RouterEndpoint normalize() {
-    final normalizedPath = baseUri.path == '/' ? '' : baseUri.path;
+  @override
+  bool operator ==(Object other) =>
+      other is RouterEndpoint &&
+      host == other.host &&
+      port == other.port &&
+      useHttps == other.useHttps;
 
-    return RouterEndpoint(
-      baseUri: baseUri.replace(path: normalizedPath, query: ''),
-      displayName: displayName,
-    );
-  }
+  @override
+  int get hashCode => Object.hash(host, port, useHttps);
 }

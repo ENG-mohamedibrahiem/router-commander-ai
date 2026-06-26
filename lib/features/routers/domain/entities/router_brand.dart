@@ -14,9 +14,20 @@ enum RouterBrand {
   final String displayName;
   final String defaultGateway;
 
+  /// Matches by [name] (enum key) OR by [displayName] — case-insensitive.
+  ///
+  /// Examples:
+  ///   'zte'       → RouterBrand.zte
+  ///   'ZTE'       → RouterBrand.zte
+  ///   'TP-Link'   → RouterBrand.tpLink
+  ///   'tpLink'    → RouterBrand.tpLink
+  ///   'anything'  → RouterBrand.unknown
   static RouterBrand fromString(String value) {
+    final lower = value.toLowerCase();
     return RouterBrand.values.firstWhere(
-      (b) => b.name.toLowerCase() == value.toLowerCase(),
+      (b) =>
+          b.name.toLowerCase() == lower ||
+          b.displayName.toLowerCase() == lower,
       orElse: () => RouterBrand.unknown,
     );
   }

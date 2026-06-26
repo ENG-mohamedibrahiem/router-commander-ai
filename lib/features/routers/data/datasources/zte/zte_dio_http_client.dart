@@ -1,18 +1,19 @@
 import 'package:dio/dio.dart';
 
-import '../../../../../../core/errors/app_exception.dart';
-import '../../../../../routers/domain/entities/router_endpoint.dart';
+import '../../../../../core/errors/app_exception.dart';
+import '../../../domain/entities/router_endpoint.dart';
 import 'auth/zte_authentication_strategy.dart';
-import 'protocol/zte_protocol_constants.dart';
 
-/// Dio-backed implementation of [ZteHttpClient].
+/// Concrete [ZteHttpClient] implementation backed by [Dio].
 ///
-/// Handles:
-///  - Mandatory Referer header on every request (classification: VERIFIED)
-///  - Raw Set-Cookie header extraction (classification: VERIFIED)
-///  - DioException → AppException mapping
+/// This client:
+/// - Constructs URLs from [RouterEndpoint.baseUri]
+/// - Forwards query parameters
+/// - Automatically attaches `Referer` when not provided
+/// - Maps Dio exceptions to typed [AppException] subclasses
+/// - Extracts `Set-Cookie` from response headers for auth flows
 final class ZteDioHttpClient implements ZteHttpClient {
-  ZteDioHttpClient({required Dio dio}) : _dio = dio;
+  const ZteDioHttpClient({required Dio dio}) : _dio = dio;
 
   final Dio _dio;
 
@@ -23,25 +24,29 @@ final class ZteDioHttpClient implements ZteHttpClient {
     required Map<String, String> queryParams,
     Map<String, String>? headers,
   }) async {
+    final uri = '${endpoint.baseUri}$path';
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '${endpoint.baseUri}$path',
+        uri,
         queryParameters: queryParams,
         options: Options(
           headers: {
-            'Referer': '${endpoint.baseUri}$kZteRefererSuffix',
+            'Referer': endpoint.baseUri,
             ...?headers,
           },
-          receiveDataWhenStatusError: true,
+          responseType: ResponseType.json,
         ),
       );
       final data = response.data;
       if (data == null) {
-        throw const ParseException(message: 'ZTE GET returned null body.');
+        throw ParseException(
+          message: 'ZTE GET $path returned null body.',
+          rawBody: null,
+        );
       }
       return data;
     } on DioException catch (e) {
-      throw _mapDioException(e);
+      throw _mapDioException(e, path);
     }
   }
 
@@ -52,55 +57,63 @@ final class ZteDioHttpClient implements ZteHttpClient {
     required String body,
     required Map<String, String> headers,
   }) async {
+    final uri = '${endpoint.baseUri}$path';
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '${endpoint.baseUri}$path',
+        uri,
         data: body,
         options: Options(
           headers: {
-            'Referer': '${endpoint.baseUri}$kZteRefererSuffix',
+            'Referer': endpoint.baseUri,
             ...headers,
           },
-          receiveDataWhenStatusError: true,
+          responseType: ResponseType.json,
         ),
       );
-      final data = response.data;
-      if (data == null) {
-        throw const ParseException(message: 'ZTE POST returned null body.');
-      }
-      final rawCookie =
+
+      final responseData = response.data ?? {};
+      final setCookie =
           response.headers.value('set-cookie');
-      return ZtePostResult(body: data, setCookieHeader: rawCookie);
+
+      return ZtePostResult(
+        body: responseData,
+        setCookieHeader: setCookie,
+      );
     } on DioException catch (e) {
-      throw _mapDioException(e);
+      throw _mapDioException(e, path);
     }
   }
 
-  AppException _mapDioException(DioException e) {
-    switch (e.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.receiveTimeout:
-      case DioExceptionType.sendTimeout:
-        return TimeoutException(
-          message: 'ZTE request timed out: ${e.requestOptions.uri}',
-          cause: e,
-        );
-      case DioExceptionType.connectionError:
-        return NetworkException(
-          message: 'Cannot reach ZTE router at ${e.requestOptions.baseUrl}',
-          cause: e,
-        );
-      case DioExceptionType.badResponse:
-        return HttpStatusException(
-          message: 'ZTE returned HTTP ${e.response?.statusCode}',
+  // -------------------------------------------------------------------------
+  // Private helpers
+  // -------------------------------------------------------------------------
+
+  AppException _mapDioException(DioException e, String path) {
+    return switch (e.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout =>
+          TimeoutException(
+            message:
+                'ZTE request timed out on $path (${e.type.name}).',
+            cause: e,
+            timeoutMs: _dio.options.connectTimeout?.inMilliseconds,
+          ),
+      DioExceptionType.badResponse => HttpStatusException(
+          message:
+              'ZTE HTTP ${e.response?.statusCode} on $path.',
           statusCode: e.response?.statusCode ?? 0,
           cause: e,
-        );
-      default:
-        return NetworkException(
-          message: 'ZTE network error: ${e.message}',
+        ),
+      DioExceptionType.connectionError => NetworkException(
+          message:
+              'Cannot reach ZTE router at $path: ${e.message}',
           cause: e,
-        );
-    }
+        ),
+      _ => NetworkException(
+          message: 'Dio error on ZTE $path: ${e.message}',
+          cause: e,
+        ),
+    };
   }
 }

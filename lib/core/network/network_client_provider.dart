@@ -1,23 +1,49 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:router_commander_ai/core/network/dio_client.dart';
 
-/// Provides a [DioClient] scoped to a specific [baseUrl].
-/// Consumers must override this provider with the router's base URL
-/// (e.g., 'http://192.168.1.1') before making any requests.
+import '../config/app_constants.dart';
+
+/// Provides the singleton [Dio] instance configured for router communication.
 ///
-/// Usage:
-/// ```dart
-/// final container = ProviderContainer(
-///   overrides: [
-///     dioClientProvider('http://192.168.1.1'),
-///   ],
-/// );
-/// ```
-DioClient dioClientForUrl(String baseUrl) => DioClient.forBaseUrl(baseUrl);
+/// Timeout values are read from [AppConstants] so they can be tuned
+/// centrally without touching this file.
+final networkClientProvider = Provider<Dio>((ref) {
+  final options = BaseOptions(
+    connectTimeout:
+        const Duration(milliseconds: AppConstants.connectTimeoutMs),
+    sendTimeout:
+        const Duration(milliseconds: AppConstants.sendTimeoutMs),
+    receiveTimeout:
+        const Duration(milliseconds: AppConstants.receiveTimeoutMs),
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    validateStatus: (status) => status != null && status < 500,
+  );
 
-/// Family provider — one DioClient per base URL.
-/// Riverpod caches by [baseUrl] string.
-final dioClientProvider =
-    Provider.family.autoDispose<DioClient, String>((ref, baseUrl) {
-  return DioClient.forBaseUrl(baseUrl);
+  final dio = Dio(options);
+
+  // -------------------------------------------------------------------------
+  // Interceptors
+  // -------------------------------------------------------------------------
+
+  // 1. Request/response logging (debug only).
+  assert(() {
+    dio.interceptors.add(
+      LogInterceptor(
+        requestBody: false,
+        responseBody: false,
+        logPrint: (obj) => _log(obj.toString()),
+      ),
+    );
+    return true;
+  }());
+
+  return dio;
 });
+
+void _log(String message) {
+  // ignore: avoid_print
+  print('[Dio] $message');
+}
