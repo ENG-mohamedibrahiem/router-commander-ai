@@ -1,72 +1,79 @@
 import 'package:dio/dio.dart';
-import '../../../../domain/adapters/router_adapter.dart';
-import '../../../../domain/entities/connected_device.dart';
-import '../../../../domain/entities/dsl_information.dart';
-import '../../../../domain/entities/router_credentials.dart';
-import '../../../../domain/entities/router_detection_result.dart';
-import '../../../../domain/entities/router_device_info.dart';
-import '../../../../domain/entities/router_endpoint.dart';
-import '../../../../domain/entities/router_model.dart';
-import '../../../../domain/entities/router_session.dart';
-import '../../../../domain/entities/wan_status.dart';
-import '../../../../domain/entities/wifi_information.dart';
+
 import '../../../../../core/errors/app_exception.dart';
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/protocol/protocol_classification.dart';
 import '../../../../../core/protocol/protocol_logger.dart';
+import '../../../../../core/utils/result.dart';
+import '../../../domain/adapters/router_adapter.dart';
+import '../../../domain/entities/connected_device.dart';
+import '../../../domain/entities/dsl_information.dart';
+import '../../../domain/entities/router_credentials.dart';
+import '../../../domain/entities/router_detection_result.dart';
+import '../../../domain/entities/router_device_info.dart';
+import '../../../domain/entities/router_endpoint.dart';
+import '../../../domain/entities/router_model.dart';
+import '../../../domain/entities/router_session.dart';
+import '../../../domain/entities/wan_status.dart';
+import '../../../domain/entities/wifi_information.dart';
 import 'auth/zte_authentication_strategy.dart';
 import 'auth/zte_password_hasher.dart';
 import 'auth/zte_session_extractor.dart';
+import 'models/zte_connected_devices_model.dart';
 import 'models/zte_device_info_model.dart';
-import 'models/zte_devices_model.dart';
-import 'models/zte_dsl_model.dart';
-import 'models/zte_wan_model.dart';
-import 'models/zte_wifi_model.dart';
+import 'models/zte_dsl_information_model.dart';
+import 'models/zte_wan_status_model.dart';
+import 'models/zte_wifi_information_model.dart';
 import 'protocol/zte_protocol_constants.dart';
-import 'zte_http_client_impl.dart';
+import 'zte_dio_http_client.dart';
 
-/// Concrete [RouterAdapter] for ZTE routers (MF297D, MF267, MC801A).
+/// Full ZTE router adapter implementing [RouterAdapter].
 ///
-/// Lifecycle:
-///   detect() → verify this is a ZTE router without credentials
-///   login()  → full auth flow via [ZteAuthenticationStrategy]
-///   read*()  → authenticated GET requests to goform_get_cmd_process
+/// Every read operation performs a single GET to [kZteGetCmdEndpoint] with
+/// the required field list. Session cookies are forwarded via the
+/// Cookie header on every authenticated request.
+///
+/// Classification policy:
+///   - Operations marked VERIFIED proceed without extra logging.
+///   - Operations marked ASSUMED log via [ProtocolLogger.logFallback].
+///   - Operations marked EXPERIMENTAL are guarded and log via
+///     [ProtocolLogger.logExperimentalCall].
 final class ZteRouterAdapter implements RouterAdapter {
   ZteRouterAdapter({
     required Dio dio,
     required ProtocolLogger logger,
-  })  : _logger = logger,
-        _httpClient = ZteHttpClientImpl(dio),
+  })  : _httpClient = ZteDioHttpClient(dio: dio),
         _authStrategy = ZteAuthenticationStrategy(
-          httpClient: ZteHttpClientImpl(dio),
+          httpClient: ZteDioHttpClient(dio: dio),
           passwordHasher: const ZtePasswordHasher(),
           sessionExtractor: const ZteSessionExtractor(),
           logger: logger,
-        );
+        ),
+        _logger = logger;
 
-  final ProtocolLogger _logger;
-  final ZteHttpClientImpl _httpClient;
+  final ZteDioHttpClient _httpClient;
   final ZteAuthenticationStrategy _authStrategy;
+  final ProtocolLogger _logger;
 
-  static const String _id = 'zte_adapter_v1';
-  static const String _displayName = 'ZTE Router';
-
-  @override
-  String get id => _id;
+  static const String _adapterId = 'zte_generic';
+  static const String _adapterDisplay = 'ZTE';
 
   @override
-  String get displayName => _displayName;
+  String get id => _adapterId;
 
   @override
-  RouterModel get supportedModel => const RouterModel(
-        brand: 'ZTE',
-        series: 'MF/MC Series',
-        firmwarePattern: 'ZTE.*',
-      );
+  String get displayName => _adapterDisplay;
 
-  // ---------------------------------------------------------------------------
-  // Detection — no credentials needed
-  // ---------------------------------------------------------------------------
+  @override
+  RouterModel get supportedModel => RouterModel.zteGeneric;
 
+  // -------------------------------------------------------------------------
+  // Detection
+  // -------------------------------------------------------------------------
+
+  /// Probes the endpoint for ZTE-specific response fields.
+  ///
+  /// classification: VERIFIED — goform_get_cmd_process is unique to ZTE.
   @override
   Future<RouterDetectionResult> detect(RouterEndpoint endpoint) async {
     try {
@@ -74,39 +81,28 @@ final class ZteRouterAdapter implements RouterAdapter {
         endpoint,
         kZteGetCmdEndpoint,
         queryParams: {
-          'cmd': kZteDeviceNameField,
+          'cmd': kZteAuthCapabilityField,
           kZteMultiParam: kZteMultiParamValue,
         },
       );
-
-      final deviceName = body[kZteDeviceNameField] as String?;
-      final isZte = deviceName != null && deviceName.isNotEmpty;
-
-      _logger.logCapabilityDetected(
-        adapter: _displayName,
-        capability: 'brand_detection',
-        detectedValue: 'deviceName=$deviceName, isZte=$isZte',
-      );
-
+      final hasCapability =
+          body.containsKey(kZteAuthCapabilityField);
       return RouterDetectionResult(
-        endpoint: endpoint,
-        brandName: isZte ? 'ZTE' : 'Unknown',
-        deviceName: deviceName,
-        isSupported: isZte,
+        isCompatible: hasCapability,
+        confidence: hasCapability ? 0.95 : 0.0,
+        detectedBrand: hasCapability ? 'ZTE' : null,
       );
     } catch (_) {
-      return RouterDetectionResult(
-        endpoint: endpoint,
-        brandName: 'Unknown',
-        deviceName: null,
-        isSupported: false,
+      return const RouterDetectionResult(
+        isCompatible: false,
+        confidence: 0.0,
       );
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Auth
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Authentication
+  // -------------------------------------------------------------------------
 
   @override
   Future<RouterSession> login({
@@ -118,92 +114,107 @@ final class ZteRouterAdapter implements RouterAdapter {
       credentials: credentials,
       model: supportedModel,
     );
-    return result.getOrThrow();
+    return result.when(
+      success: (session) => session,
+      failure: (failure) => throw _failureToException(failure),
+    );
   }
 
-  @override
-  Future<void> logout(RouterSession session) async {
-    try {
-      await _httpClient.post(
-        session.endpoint,
-        kZteSetCmdEndpoint,
-        body: 'goform_id=LOGOUT',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': session.cookieHeader ?? '',
-          'Referer': '${session.endpoint.baseUri}$kZteRefererSuffix',
-        },
-      );
-    } catch (_) {
-      // Best-effort logout — session is invalidated locally regardless.
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Read operations — all require an authenticated session
-  // ---------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // Read operations
+  // -------------------------------------------------------------------------
 
   @override
   Future<RouterDeviceInfo> readDeviceInfo(RouterSession session) async {
-    final body = await _getCmd(
-      session,
-      '$kZteDeviceNameField,$kZteFirmwareVersionField,$kZteHardwareVersionField,$kZteImeiField,$kZteUptimeField',
+    final body = await _authenticatedGet(
+      session: session,
+      cmds: kZteDeviceInfoCmds,
     );
-    return ZteDeviceInfoModel.fromJson(body).toEntity();
+    return ZteDeviceInfoModel.fromMap(body);
   }
 
   @override
   Future<WanStatus> readWanStatus(RouterSession session) async {
-    final body = await _getCmd(
-      session,
-      '$kZteWanStateField,$kZteWanIpField,$kZteWanGatewayField,$kZteDnsField,$kZteWanTypeField',
+    final body = await _authenticatedGet(
+      session: session,
+      cmds: kZteWanStatusCmds,
     );
-    return ZteWanModel.fromJson(body).toEntity();
+    return ZteWanStatusModel.fromMap(body);
   }
 
   @override
   Future<WifiInformation> readWifiInformation(RouterSession session) async {
-    final body = await _getCmd(
-      session,
-      '$kZteWifiSsidField,$kZteWifiAuthModeField,$kZteWifiBandField,$kZteWifiChannelField,$kZteWifiStatusField',
+    final body = await _authenticatedGet(
+      session: session,
+      cmds: kZteWifiInfoCmds,
     );
-    return ZteWifiModel.fromJson(body).toEntity();
-  }
-
-  @override
-  Future<DslInformation> readDslInformation(RouterSession session) async {
-    final body = await _getCmd(
-      session,
-      '$kZteDslSnrDownField,$kZteDslSnrUpField,$kZteDslAttenuationDownField,$kZteDslAttenuationUpField,$kZteDslSyncDownField,$kZteDslSyncUpField,$kZteDslLineStateField',
-    );
-    return ZteDslModel.fromJson(body).toEntity();
+    return ZteWifiInformationModel.fromMap(body);
   }
 
   @override
   Future<List<ConnectedDevice>> readConnectedDevices(
       RouterSession session) async {
-    final body = await _getCmd(session, kZteHostInfoField);
-    return ZteDevicesModel.fromJson(body).toEntityList();
+    final body = await _authenticatedGet(
+      session: session,
+      cmds: kZteConnectedDevicesCmds,
+    );
+    return ZteConnectedDevicesModel.fromMap(body);
   }
 
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
+  @override
+  Future<DslInformation> readDslInformation(RouterSession session) async {
+    // classification: ASSUMED — log that DSL fields may be absent on LTE-only
+    // models; ZteDslInformationModel handles absent fields gracefully.
+    _logger.logFallback(
+      adapter: _adapterDisplay,
+      operation: 'readDslInformation',
+      classification: ProtocolClassification.assumed,
+      reason: 'DSL field names are ASSUMED; may be absent on LTE-only models.',
+      fallbackUsed: 'All DSL fields nullable — returns null values if absent.',
+    );
+    final body = await _authenticatedGet(
+      session: session,
+      cmds: kZteDslInfoCmds,
+    );
+    return ZteDslInformationModel.fromMap(body);
+  }
 
-  Future<Map<String, dynamic>> _getCmd(
-    RouterSession session,
-    String cmd,
-  ) async {
+  // -------------------------------------------------------------------------
+  // Private helpers
+  // -------------------------------------------------------------------------
+
+  /// Performs an authenticated GET to [kZteGetCmdEndpoint].
+  ///
+  /// Attaches the session cookie from [RouterSession.cookieHeader].
+  /// classification: VERIFIED — Cookie header required on all post-login reads.
+  Future<Map<String, dynamic>> _authenticatedGet({
+    required RouterSession session,
+    required List<String> cmds,
+  }) async {
+    if (session.isExpired) {
+      throw const SessionExpiredException(
+          message: 'ZTE session has expired. Re-authenticate.');
+    }
+    final cookieHeader = session.cookieHeader;
     return _httpClient.get(
       session.endpoint,
       kZteGetCmdEndpoint,
       queryParams: {
-        'cmd': cmd,
+        'cmd': cmds.join(','),
         kZteMultiParam: kZteMultiParamValue,
       },
-      headers: {
-        'Cookie': session.cookieHeader ?? '',
-      },
+      headers: cookieHeader != null ? {'Cookie': cookieHeader} : null,
     );
+  }
+
+  AppException _failureToException(Failure failure) {
+    return switch (failure) {
+      AuthFailure f => AuthException(message: f.message),
+      NetworkFailure f => NetworkException(message: f.message, cause: f.cause),
+      ParseFailure f => ParseException(message: f.message),
+      TimeoutFailure f => TimeoutException(message: f.message),
+      SessionFailure f => SessionException(message: f.message),
+      _ => NetworkException(message: failure.message),
+    };
   }
 }
