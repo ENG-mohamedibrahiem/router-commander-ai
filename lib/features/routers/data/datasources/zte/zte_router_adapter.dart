@@ -32,12 +32,6 @@ import 'zte_dio_http_client.dart';
 /// Every read operation performs a single GET to [kZteGetCmdEndpoint] with
 /// the required field list. Session cookies are forwarded via the
 /// Cookie header on every authenticated request.
-///
-/// Classification policy:
-///   - Operations marked VERIFIED proceed without extra logging.
-///   - Operations marked ASSUMED log via [ProtocolLogger.logFallback].
-///   - Operations marked EXPERIMENTAL are guarded and log via
-///     [ProtocolLogger.logExperimentalCall].
 final class ZteRouterAdapter implements RouterAdapter {
   ZteRouterAdapter({
     required Dio dio,
@@ -71,9 +65,6 @@ final class ZteRouterAdapter implements RouterAdapter {
   // Detection
   // -------------------------------------------------------------------------
 
-  /// Probes the endpoint for ZTE-specific response fields.
-  ///
-  /// classification: VERIFIED — goform_get_cmd_process is unique to ZTE.
   @override
   Future<RouterDetectionResult> detect(RouterEndpoint endpoint) async {
     try {
@@ -85,8 +76,7 @@ final class ZteRouterAdapter implements RouterAdapter {
           kZteMultiParam: kZteMultiParamValue,
         },
       );
-      final hasCapability =
-          body.containsKey(kZteAuthCapabilityField);
+      final hasCapability = body.containsKey(kZteAuthCapabilityField);
       return RouterDetectionResult(
         isCompatible: hasCapability,
         confidence: hasCapability ? 0.95 : 0.0,
@@ -114,9 +104,9 @@ final class ZteRouterAdapter implements RouterAdapter {
       credentials: credentials,
       model: supportedModel,
     );
-    return result.when(
-      success: (session) => session,
-      failure: (failure) => throw _failureToException(failure),
+    return result.fold(
+      onSuccess: (session) => session,
+      onFailure: (failure) => throw _failureToException(failure),
     );
   }
 
@@ -163,8 +153,6 @@ final class ZteRouterAdapter implements RouterAdapter {
 
   @override
   Future<DslInformation> readDslInformation(RouterSession session) async {
-    // classification: ASSUMED — log that DSL fields may be absent on LTE-only
-    // models; ZteDslInformationModel handles absent fields gracefully.
     _logger.logFallback(
       adapter: _adapterDisplay,
       operation: 'readDslInformation',
@@ -183,10 +171,6 @@ final class ZteRouterAdapter implements RouterAdapter {
   // Private helpers
   // -------------------------------------------------------------------------
 
-  /// Performs an authenticated GET to [kZteGetCmdEndpoint].
-  ///
-  /// Attaches the session cookie from [RouterSession.cookieHeader].
-  /// classification: VERIFIED — Cookie header required on all post-login reads.
   Future<Map<String, dynamic>> _authenticatedGet({
     required RouterSession session,
     required List<String> cmds,
@@ -210,11 +194,15 @@ final class ZteRouterAdapter implements RouterAdapter {
   AppException _failureToException(Failure failure) {
     return switch (failure) {
       AuthFailure f => AuthException(message: f.message),
-      NetworkFailure f => NetworkException(message: f.message, cause: f.cause),
+      SessionFailure f => SessionException(message: f.message),
+      NetworkFailure f =>
+          NetworkException(message: f.message, cause: f.cause),
       ParseFailure f => ParseException(message: f.message),
       TimeoutFailure f => TimeoutException(message: f.message),
-      SessionFailure f => SessionException(message: f.message),
-      _ => NetworkException(message: failure.message),
+      RouterErrorFailure f =>
+          RouterErrorException(message: f.message, routerCode: f.code ?? ''),
+      UnknownFailure f =>
+          NetworkException(message: f.message, cause: f.cause),
     };
   }
 }

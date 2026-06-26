@@ -1,26 +1,59 @@
+import '../../../../core/utils/result.dart';
 import '../entities/router_brand.dart';
 import '../entities/router_detection_result.dart';
 import '../entities/router_endpoint.dart';
-import '../../../../core/utils/result.dart';
+import '../factories/router_adapter_factory.dart';
 
-/// Domain service that probes a local network endpoint and identifies
-/// the router brand without requiring authentication.
+/// Domain service that discovers which router brand is at a given endpoint.
 ///
-/// Classification: VERIFIED for ZTE MF297D / ASSUMED for generic probes.
-abstract interface class RouterDiscoveryService {
-  /// Probes [endpoint] and returns a [RouterDetectionResult] if the router
-  /// responds with a recognisable fingerprint.
-  ///
-  /// Returns [ResultFailure] if the endpoint is unreachable or the brand
-  /// cannot be determined.
-  Future<Result<RouterDetectionResult>> probe(RouterEndpoint endpoint);
+/// Tries each registered adapter in priority order and returns the first
+/// successful detection with confidence > [_kMinConfidence].
+final class RouterDiscoveryService {
+  const RouterDiscoveryService({required RouterAdapterFactory factory})
+      : _factory = factory;
 
-  /// Scans common gateway IPs on the current subnet and returns the first
-  /// endpoint that responds with a recognisable router fingerprint.
-  ///
-  /// Candidate IPs: 192.168.1.1, 192.168.0.1, 192.168.8.1, 10.0.0.1
-  Future<Result<RouterDetectionResult>> autoDiscover();
+  final RouterAdapterFactory _factory;
 
-  /// Returns [true] if [brand] is currently supported by this service.
-  bool supports(RouterBrand brand);
+  /// Minimum confidence score to accept a detection result.
+  static const double _kMinConfidence = 0.5;
+
+  /// Probes [endpoint] against all registered adapters.
+  ///
+  /// Returns [RouterDetectionResult] with the detected brand on success,
+  /// or a result where [RouterDetectionResult.isCompatible] == false.
+  Future<Result<RouterDetectionResult>> discover(
+      RouterEndpoint endpoint) async {
+    for (final brand in _factory.supportedBrands) {
+      try {
+        final adapter = _factory.adapterFor(brand);
+        final result = await adapter.detect(endpoint);
+        if (result.isCompatible && result.confidence >= _kMinConfidence) {
+          return Success(result);
+        }
+      } catch (_) {
+        // Adapter probe failed — try next brand.
+        continue;
+      }
+    }
+    return const Success(
+      RouterDetectionResult(
+        isCompatible: false,
+        confidence: 0.0,
+      ),
+    );
+  }
+
+  /// Returns the best-guess [RouterBrand] for [endpoint].
+  ///
+  /// Returns [RouterBrand.unknown] if no match found.
+  Future<RouterBrand> detectBrand(RouterEndpoint endpoint) async {
+    final result = await discover(endpoint);
+    final detection = result.valueOrNull;
+    if (detection == null || !detection.isCompatible) {
+      return RouterBrand.unknown;
+    }
+    final raw = detection.detectedBrand;
+    if (raw == null) return RouterBrand.unknown;
+    return RouterBrand.fromString(raw);
+  }
 }

@@ -1,16 +1,21 @@
 import '../adapters/router_adapter.dart';
 import '../entities/router_brand.dart';
+import '../entities/router_endpoint.dart';
 
-/// Domain contract for creating [RouterAdapter] instances by brand.
+/// Domain factory contract — creates the correct [RouterAdapter] for a brand.
 ///
-/// Keeps brand detection logic out of the repository. New brands are
-/// added by registering a new adapter — zero changes to callers.
+/// Implementations live in the data layer and are injected via Riverpod.
 abstract interface class RouterAdapterFactory {
   /// Returns the adapter registered for [brand].
   ///
-  /// Throws [StateError] if no adapter is registered for the given brand.
-  RouterAdapter forBrand(RouterBrand brand);
+  /// Throws [UnsupportedError] if the brand has no registered adapter.
+  RouterAdapter adapterFor(RouterBrand brand);
 
-  /// Returns all registered brand values.
+  /// Returns the adapter most likely to handle [endpoint] by probing it.
+  ///
+  /// Returns null if no adapter reports compatibility above threshold.
+  Future<RouterAdapter?> detectAdapter(RouterEndpoint endpoint);
+
+  /// All brands currently supported (have a registered adapter).
   List<RouterBrand> get supportedBrands;
 }

@@ -13,14 +13,21 @@ sealed class Failure {
 }
 
 final class NetworkFailure extends Failure {
-  const NetworkFailure({required super.message, this.statusCode,
-      this.cause});
+  const NetworkFailure({
+    required super.message,
+    this.statusCode,
+    this.cause,
+  });
   final int? statusCode;
   final Object? cause;
 }
 
 final class AuthFailure extends Failure {
   const AuthFailure({required super.message});
+}
+
+final class SessionFailure extends Failure {
+  const SessionFailure({required super.message});
 }
 
 final class ParseFailure extends Failure {
@@ -48,16 +55,18 @@ final class UnknownFailure extends Failure {
 // ---------------------------------------------------------------------------
 
 /// Maps a typed [AppException] to its corresponding [Failure].
-/// Used inside repository guard blocks.
 Failure failureFromException(AppException e) => switch (e) {
-      NetworkException(:final message, :final statusCode) =>
-          NetworkFailure(message: message, statusCode: statusCode, cause: e),
-      AuthException(:final message) =>
-          AuthFailure(message: message),
-      ParseException(:final message, :final rawBody) =>
-          ParseFailure(message: message, rawBody: rawBody),
-      TimeoutException(:final message, :final timeoutMs) =>
-          TimeoutFailure(message: message, timeoutMs: timeoutMs),
-      RouterErrorException(:final message, :final code) =>
-          RouterErrorFailure(message: message, code: code),
+      NetworkException(:final message) ||
+      HttpStatusException(:final message) =>
+          NetworkFailure(message: message, cause: e),
+      AuthException(:final message) => AuthFailure(message: message),
+      SessionException(:final message) ||
+      SessionExpiredException(:final message) =>
+          SessionFailure(message: message),
+      ParseException(:final message) => ParseFailure(message: message),
+      TimeoutException(:final message) => TimeoutFailure(message: message),
+      RouterErrorException(:final message, :final routerCode) =>
+          RouterErrorFailure(message: message, code: routerCode),
+      UnsupportedOperationException(:final message) =>
+          UnknownFailure(message: message),
     };
