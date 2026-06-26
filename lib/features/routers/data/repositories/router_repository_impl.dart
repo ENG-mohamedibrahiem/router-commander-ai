@@ -4,95 +4,121 @@ import '../../domain/entities/router_credentials.dart';
 import '../../domain/entities/router_detection_result.dart';
 import '../../domain/entities/router_device_info.dart';
 import '../../domain/entities/router_endpoint.dart';
-import '../../domain/entities/router_model.dart';
 import '../../domain/entities/router_session.dart';
 import '../../domain/entities/wan_status.dart';
 import '../../domain/entities/wifi_information.dart';
-import '../../domain/discovery/router_discovery_service.dart';
-import '../../domain/factories/router_factory.dart';
+import '../../domain/factories/router_adapter_factory.dart';
 import '../../domain/repositories/router_repository.dart';
-import '../../domain/services/router_detection_engine.dart';
+import '../../../../../core/errors/app_exception.dart';
+import '../../../../../core/errors/failure.dart';
+import '../../../../../core/utils/result.dart';
+import '../discovery/zte_discovery_service.dart';
 
-class RouterRepositoryImpl implements RouterRepository {
-  RouterRepositoryImpl({
-    required RouterFactory factory,
-    required RouterDetectionEngine detectionEngine,
-    required RouterDiscoveryService discoveryService,
-  })  : _factory = factory,
-        _detectionEngine = detectionEngine,
+/// Concrete implementation of [RouterRepository].
+///
+/// Routes every operation to the correct brand adapter via [RouterAdapterFactory].
+/// Catches all exceptions and maps them to typed [Failure]s —
+/// the application layer never sees raw exceptions.
+final class RouterRepositoryImpl implements RouterRepository {
+  const RouterRepositoryImpl({
+    required RouterAdapterFactory adapterFactory,
+    required ZteDiscoveryService discoveryService,
+  })  : _adapterFactory = adapterFactory,
         _discoveryService = discoveryService;
 
-  final RouterFactory _factory;
-  final RouterDetectionEngine _detectionEngine;
-  final RouterDiscoveryService _discoveryService;
-
-  // ---------------------------------------------------------------------------
-  // Discovery
-  // ---------------------------------------------------------------------------
+  final RouterAdapterFactory _adapterFactory;
+  final ZteDiscoveryService _discoveryService;
 
   @override
-  Future<List<RouterDetectionResult>> discoverRouters() {
-    return _discoveryService.discoverSupportedRouters();
-  }
+  Future<Result<RouterDetectionResult>> detect(RouterEndpoint endpoint) =>
+      _guard(() => _discoveryService.probeEndpoint(endpoint));
 
   @override
-  Future<RouterDetectionResult> detectRouter(RouterEndpoint endpoint) {
-    return _detectionEngine.detectOne(endpoint);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Auth
-  //
-  // The caller is always responsible for supplying [model] — either from a
-  // prior detectRouter() call, a saved router record, or a manual user
-  // selection. This method resolves exactly one adapter and makes exactly
-  // one login attempt. No fallback, no detection side-effects.
-  // ---------------------------------------------------------------------------
-
-  @override
-  Future<RouterSession> login({
+  Future<Result<RouterSession>> login({
     required RouterEndpoint endpoint,
     required RouterCredentials credentials,
-    required RouterModel model,
-  }) {
-    return _factory
-        .adapterForModel(model)
-        .login(endpoint: endpoint, credentials: credentials);
-  }
+  }) =>
+      _guard(() async {
+        final detection = await _discoveryService.probeEndpoint(endpoint);
+        final adapter = _adapterFactory.forBrand(detection.brand);
+        return adapter.login(
+            endpoint: endpoint, credentials: credentials);
+      });
 
   @override
-  Future<void> logout(RouterSession session) {
-    return _factory.adapterForModel(session.model).logout(session);
-  }
+  Future<Result<void>> logout(RouterSession session) =>
+      _guard(() async {
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        await adapter.logout(session);
+      });
+
+  @override
+  Future<Result<RouterDeviceInfo>> getDeviceInfo(
+          RouterSession session) =>
+      _guard(() {
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        return adapter.readDeviceInfo(session);
+      });
+
+  @override
+  Future<Result<WanStatus>> getWanStatus(RouterSession session) =>
+      _guard(() {
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        return adapter.readWanStatus(session);
+      });
+
+  @override
+  Future<Result<WifiInformation>> getWifiInfo(RouterSession session) =>
+      _guard(() {
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        return adapter.readWifiInformation(session);
+      });
+
+  @override
+  Future<Result<DslInformation>> getDslInfo(RouterSession session) =>
+      _guard(() {
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        return adapter.readDslInformation(session);
+      });
+
+  @override
+  Future<Result<List<ConnectedDevice>>> getConnectedDevices(
+          RouterSession session) =>
+      _guard(() {
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        return adapter.readConnectedDevices(session);
+      });
+
+  @override
+  Future<Result<void>> reboot(RouterSession session) =>
+      _guard(() async {
+        // Reboot sends fire-and-forget — do not await response.
+        // Classification: VERIFIED — TCP drops immediately after POST.
+        final adapter =
+            _adapterFactory.forBrand(session.model.brandEnum);
+        unawaited(adapter.reboot(session));
+      });
 
   // ---------------------------------------------------------------------------
-  // Session-based reads — each resolves the correct adapter from session.model
+  // Guard — maps any exception to Result
   // ---------------------------------------------------------------------------
 
-  @override
-  Future<RouterDeviceInfo> readDeviceInfo(RouterSession session) {
-    return _factory.adapterForModel(session.model).readDeviceInfo(session);
-  }
-
-  @override
-  Future<DslInformation> readDslInformation(RouterSession session) {
-    return _factory.adapterForModel(session.model).readDslInformation(session);
-  }
-
-  @override
-  Future<WanStatus> readWanStatus(RouterSession session) {
-    return _factory.adapterForModel(session.model).readWanStatus(session);
-  }
-
-  @override
-  Future<WifiInformation> readWifiInformation(RouterSession session) {
-    return _factory.adapterForModel(session.model).readWifiInformation(session);
-  }
-
-  @override
-  Future<List<ConnectedDevice>> readConnectedDevices(RouterSession session) {
-    return _factory
-        .adapterForModel(session.model)
-        .readConnectedDevices(session);
+  Future<Result<T>> _guard<T>(Future<T> Function() fn) async {
+    try {
+      return Success(await fn());
+    } on AppException catch (e) {
+      return ResultFailure(failureFromException(e));
+    } catch (e) {
+      return ResultFailure(
+          NetworkFailure(message: e.toString(), cause: e));
+    }
   }
 }
+
+void unawaited(Future<void> _) {}
