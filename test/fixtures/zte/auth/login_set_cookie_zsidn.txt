@@ -1,0 +1,1 @@
+zsidn=xyz789uvw012; Path=/; HttpOnly

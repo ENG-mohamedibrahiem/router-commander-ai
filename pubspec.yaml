@@ -24,6 +24,9 @@ dependencies:
   connectivity_plus: ^7.1.1
   network_info_plus: ^8.1.0
   intl: ^0.20.2
+  # Required by ZtePasswordHasher (sha256Chained + sha256Simple variants).
+  # Pure Dart — no native code. Classification: VERIFIED dependency.
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

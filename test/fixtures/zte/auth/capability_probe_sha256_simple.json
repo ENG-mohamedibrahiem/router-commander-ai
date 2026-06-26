@@ -1,0 +1,6 @@
+{
+  "_comment": "VERIFIED fixture — ZTE capability probe response for sha256Simple auth.",
+  "_source": "Firmware JS deobfuscation — intermediate firmware path.",
+  "WEB_ATTR_IF_SUPPORT_SHA256": "1",
+  "LD": ""
+}

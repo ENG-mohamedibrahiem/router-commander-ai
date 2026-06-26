@@ -1,0 +1,5 @@
+{
+  "_comment": "VERIFIED fixture — ZTE router login success response body.",
+  "_source": "Firmware JS + community packet captures. Note: known firmware typo 'sucess'.",
+  "result": "sucess"
+}

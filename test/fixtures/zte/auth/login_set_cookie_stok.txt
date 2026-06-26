@@ -1,0 +1,1 @@
+stok=abc123def456; Path=/; HttpOnly
