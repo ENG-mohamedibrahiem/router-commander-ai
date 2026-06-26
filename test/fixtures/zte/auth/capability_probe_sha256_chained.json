@@ -1,5 +1,5 @@
 {
-  "_comment": "VERIFIED fixture — ZTE MF297D capability probe response for sha256Chained auth.",
+  "_comment": "VERIFIED fixture — ZTE MF297D capability probe (variant=2 sha256Chained).",
   "_source": "Firmware JS deobfuscation + community packet captures.",
   "WEB_ATTR_IF_SUPPORT_SHA256": "2",
   "LD": "A1B2C3D4E5F60718"

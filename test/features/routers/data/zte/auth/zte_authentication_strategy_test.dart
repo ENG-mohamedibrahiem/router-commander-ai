@@ -7,12 +7,13 @@ import 'package:router_commander_ai/core/utils/result.dart';
 import 'package:router_commander_ai/features/routers/data/datasources/zte/auth/zte_authentication_strategy.dart';
 import 'package:router_commander_ai/features/routers/data/datasources/zte/auth/zte_password_hasher.dart';
 import 'package:router_commander_ai/features/routers/data/datasources/zte/auth/zte_session_extractor.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
 import 'package:router_commander_ai/features/routers/domain/entities/router_credentials.dart';
 import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
 import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
 
 // ---------------------------------------------------------------------------
-// Fake HTTP client for deterministic fixture-based testing
+// Fake HTTP client — deterministic, fixture-based, no real I/O
 // ---------------------------------------------------------------------------
 
 final class _FakeZteHttpClient implements ZteHttpClient {
@@ -48,21 +49,27 @@ final class _FakeZteHttpClient implements ZteHttpClient {
       );
 }
 
-Map<String, dynamic> _j(String json) =>
-    jsonDecode(json) as Map<String, dynamic>;
+// ---------------------------------------------------------------------------
+// Fixture constants — inlined for self-contained tests
+// ---------------------------------------------------------------------------
 
-// Fixture strings inlined — tests are self-contained, require no file I/O.
-const _probeChained = '{"WEB_ATTR_IF_SUPPORT_SHA256": "2", "LD": "A1B2C3D4E5F60718"}';
-const _probeSimple  = '{"WEB_ATTR_IF_SUPPORT_SHA256": "1", "LD": ""}';
-const _probeBase64  = '{"WEB_ATTR_IF_SUPPORT_SHA256": "0", "LD": ""}';
-const _loginOk      = '{"result": "sucess"}';
-const _loginOkAlt   = '{"result": "success"}';
-const _loginBadPw   = '{"result": "TE_WRONG_PASSWORD"}';
-const _loginNoField = '{}';
-const _cookieStok   = 'stok=abc123def456; Path=/; HttpOnly';
-const _cookieZsidn  = 'zsidn=xyz789uvw012; Path=/; HttpOnly';
+Map<String, dynamic> _j(String s) => jsonDecode(s) as Map<String, dynamic>;
+
+final _probeChained = _j('{"WEB_ATTR_IF_SUPPORT_SHA256":"2","LD":"A1B2C3D4E5F60718"}');
+final _probeSimple  = _j('{"WEB_ATTR_IF_SUPPORT_SHA256":"1","LD":""}');
+final _probeBase64  = _j('{"WEB_ATTR_IF_SUPPORT_SHA256":"0","LD":""}');
+final _loginOk      = _j('{"result":"sucess"}');          // firmware typo
+final _loginOkAlt   = _j('{"result":"success"}');         // corrected spelling
+final _loginWrong   = _j('{"result":"TE_WRONG_PASSWORD"}');
+final _loginNoField = _j('{}');
+
+const _cookieStok  = 'stok=abc123def456; Path=/; HttpOnly';
+const _cookieZsidn = 'zsidn=xyz789uvw012; Path=/; HttpOnly';
 
 // ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 void main() {
   final endpoint = RouterEndpoint.fromHost('192.168.0.1');
   final model = RouterModel(
@@ -71,9 +78,10 @@ void main() {
     hardwareVersion: null,
     firmwareVersion: null,
   );
-  const credentials = RouterCredentials(username: 'admin', password: 'admin');
+  const credentials =
+      RouterCredentials(username: 'admin', password: 'admin');
 
-  ZteAuthenticationStrategy _strategy(_FakeZteHttpClient client) =>
+  ZteAuthenticationStrategy build(_FakeZteHttpClient client) =>
       ZteAuthenticationStrategy(
         httpClient: client,
         passwordHasher: const ZtePasswordHasher(),
@@ -83,119 +91,126 @@ void main() {
       );
 
   // ── Happy path: sha256Chained + stok ─────────────────────────────────────
-  group('ZteAuthenticationStrategy — sha256Chained happy path (VERIFIED)', () {
-    test('returns Success with stok session', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeChained),
-        loginBodyResponse: _j(_loginOk),
+  group('sha256Chained + stok cookie (VERIFIED)', () {
+    test('returns Success with valid session', () async {
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeChained,
+        loginBodyResponse: _loginOk,
         loginSetCookie: _cookieStok,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
 
       expect(result.isSuccess, isTrue);
       expect(result.valueOrThrow.cookieHeader, equals('stok=abc123def456'));
       expect(result.valueOrThrow.isExpired, isFalse);
     });
 
-    test('returns Success with zsidn session (MF297D)', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeChained),
-        loginBodyResponse: _j(_loginOk),
+    test('returns Success with zsidn cookie', () async {
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeChained,
+        loginBodyResponse: _loginOk,
         loginSetCookie: _cookieZsidn,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
 
       expect(result.isSuccess, isTrue);
-      expect(result.valueOrThrow.cookieHeader, equals('zsidn=xyz789uvw012'));
+      expect(
+          result.valueOrThrow.cookieHeader, equals('zsidn=xyz789uvw012'));
     });
   });
 
   // ── Happy path: sha256Simple ──────────────────────────────────────────────
-  group('ZteAuthenticationStrategy — sha256Simple (VERIFIED)', () {
+  group('sha256Simple happy path (VERIFIED)', () {
     test('returns Success', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeSimple),
-        loginBodyResponse: _j(_loginOk),
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeSimple,
+        loginBodyResponse: _loginOk,
         loginSetCookie: _cookieStok,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.isSuccess, isTrue);
     });
   });
 
-  // ── Happy path: base64Only (MF253M) ──────────────────────────────────────
-  group('ZteAuthenticationStrategy — base64Only (VERIFIED — MF253M)', () {
+  // ── Happy path: base64Only (MF253M) ───────────────────────────────────────
+  group('base64Only happy path (VERIFIED — MF253M)', () {
     test('returns Success', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeBase64),
-        loginBodyResponse: _j(_loginOk),
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeBase64,
+        loginBodyResponse: _loginOk,
         loginSetCookie: _cookieStok,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.isSuccess, isTrue);
     });
   });
 
   // ── ASSUMED: corrected success spelling ───────────────────────────────────
-  group('ZteAuthenticationStrategy — alternate success spelling (ASSUMED)', () {
-    test('accepts "success" as well as firmware typo "sucess"', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeChained),
-        loginBodyResponse: _j(_loginOkAlt),
+  group('corrected "success" spelling (ASSUMED guard)', () {
+    test('accepts "success" without failing', () async {
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeChained,
+        loginBodyResponse: _loginOkAlt,
         loginSetCookie: _cookieStok,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.isSuccess, isTrue);
     });
   });
 
-  // ── Auth failures (VERIFIED) ──────────────────────────────────────────────
-  group('ZteAuthenticationStrategy — auth failures (VERIFIED)', () {
+  // ── Failure: wrong password ───────────────────────────────────────────────
+  group('auth failures (VERIFIED)', () {
     test('returns AuthFailure for wrong password', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeChained),
-        loginBodyResponse: _j(_loginBadPw),
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeChained,
+        loginBodyResponse: _loginWrong,
         loginSetCookie: null,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.isFailure, isTrue);
       expect(result.failureOrThrow, isA<AuthFailure>());
     });
 
     test('returns ParseFailure when result field missing', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeChained),
-        loginBodyResponse: _j(_loginNoField),
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeChained,
+        loginBodyResponse: _loginNoField,
         loginSetCookie: null,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
-      expect(result.isFailure, isTrue);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.failureOrThrow, isA<ParseFailure>());
     });
 
-    test('returns SessionFailure when Set-Cookie absent after success', () async {
-      final result = await _strategy(_FakeZteHttpClient(
-        probeResponse: _j(_probeChained),
-        loginBodyResponse: _j(_loginOk),
+    test('returns SessionFailure when Set-Cookie absent after success',
+        () async {
+      final result = await build(_FakeZteHttpClient(
+        probeResponse: _probeChained,
+        loginBodyResponse: _loginOk,
         loginSetCookie: null,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
-      expect(result.isFailure, isTrue);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.failureOrThrow, isA<SessionFailure>());
     });
   });
 
-  // ── Probe failures (VERIFIED) ─────────────────────────────────────────────
-  group('ZteAuthenticationStrategy — probe failures (VERIFIED)', () {
+  // ── Failure: probe errors ─────────────────────────────────────────────────
+  group('probe failures (VERIFIED)', () {
     test('returns ParseFailure when capability field absent', () async {
-      final result = await _strategy(_FakeZteHttpClient(
+      final result = await build(_FakeZteHttpClient(
         probeResponse: {'LD': 'something'},
         loginBodyResponse: {},
-        loginSetCookie: null,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
-      expect(result.isFailure, isTrue);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.failureOrThrow, isA<ParseFailure>());
     });
 
-    test('returns ParseFailure when sha256Chained but LD token missing', () async {
-      final result = await _strategy(_FakeZteHttpClient(
+    test('returns ParseFailure when sha256Chained but LD token missing',
+        () async {
+      final result = await build(_FakeZteHttpClient(
         probeResponse: {'WEB_ATTR_IF_SUPPORT_SHA256': '2'},
         loginBodyResponse: {},
-        loginSetCookie: null,
-      )).authenticate(endpoint: endpoint, credentials: credentials, model: model);
-      expect(result.isFailure, isTrue);
+      )).authenticate(
+          endpoint: endpoint, credentials: credentials, model: model);
       expect(result.failureOrThrow, isA<ParseFailure>());
     });
   });
@@ -207,16 +222,17 @@ void main() {
     });
     test('ResultFailure.isFailure is true', () {
       expect(
-        ResultFailure<int>(const AuthFailure(message: 'x')).isFailure,
-        isTrue,
-      );
+          ResultFailure<int>(const AuthFailure(message: 'x')).isFailure,
+          isTrue);
     });
     test('map transforms value on Success', () {
-      expect(const Success(2).map((v) => v * 3).valueOrThrow, equals(6));
+      final r = const Success(2).map((v) => v * 3);
+      expect(r.valueOrThrow, equals(6));
     });
     test('map propagates Failure unchanged', () {
       final f = const AuthFailure(message: 'err');
-      expect(ResultFailure<int>(f).map((v) => v * 3).failureOrThrow, equals(f));
+      expect(ResultFailure<int>(f).map((v) => v * 3).failureOrThrow,
+          equals(f));
     });
   });
 }

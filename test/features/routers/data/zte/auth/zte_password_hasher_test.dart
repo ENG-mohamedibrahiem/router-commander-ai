@@ -48,13 +48,15 @@ void main() {
 
     test('different LD tokens produce different hashes', () {
       final h1 = hasher.hash(
-          plainPassword: password,
-          variant: ZteAuthVariant.sha256Chained,
-          ldToken: 'TOKEN_ONE');
+        plainPassword: password,
+        variant: ZteAuthVariant.sha256Chained,
+        ldToken: 'TOKEN_ONE',
+      );
       final h2 = hasher.hash(
-          plainPassword: password,
-          variant: ZteAuthVariant.sha256Chained,
-          ldToken: 'TOKEN_TWO');
+        plainPassword: password,
+        variant: ZteAuthVariant.sha256Chained,
+        ldToken: 'TOKEN_TWO',
+      );
       expect(h1, isNot(equals(h2)));
     });
   });
@@ -84,9 +86,8 @@ void main() {
 
   // ── base64Only (variant=0) ────────────────────────────────────────────────
   group('ZtePasswordHasher — base64Only (VERIFIED — MF253M legacy)', () {
-    const password = 'admin';
-
     test('produces base64( password )', () {
+      const password = 'admin';
       final expected = base64.encode(utf8.encode(password));
       final result = hasher.hash(
         plainPassword: password,

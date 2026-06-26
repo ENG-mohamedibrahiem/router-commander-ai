@@ -1,14 +1,14 @@
 /// Describes which password-hashing variant is active on a ZTE router.
 ///
-/// The variant is determined at runtime by reading [kZteAuthCapabilityField]
-/// (WEB_ATTR_IF_SUPPORT_SHA256) during the capability probe.
-/// It must NEVER be hardcoded.
+/// The variant is determined at runtime by reading the
+/// [kZteAuthCapabilityField] (WEB_ATTR_IF_SUPPORT_SHA256) field during
+/// the capability probe. It must NEVER be hardcoded.
 ///
 /// | Variant        | Capability | Algorithm                             |
-/// |----------------|-----------|---------------------------------------|
-/// | sha256Chained  | '2'       | sha256( sha256(password) + LD_token ) |
-/// | sha256Simple   | '1'       | sha256( base64(password) )            |
-/// | base64Only     | '0'       | base64( password )                    |
+/// |----------------|------------|---------------------------------------|
+/// | sha256Chained  | '2'        | sha256( sha256(password) + LD_token ) |
+/// | sha256Simple   | '1'        | sha256( base64(password) )            |
+/// | base64Only     | '0'        | base64( password )                    |
 ///
 /// classification source: VERIFIED — MF297D firmware JS deobfuscation.
 enum ZteAuthVariant {
@@ -35,6 +35,7 @@ enum ZteAuthVariant {
         _ => null,
       };
 
+  /// Human-readable label used in protocol log events.
   String get label => switch (this) {
         sha256Chained => 'SHA256_CHAINED (variant=2)',
         sha256Simple => 'SHA256_SIMPLE (variant=1)',

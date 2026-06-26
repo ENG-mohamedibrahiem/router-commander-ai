@@ -8,9 +8,10 @@ import '../protocol/zte_protocol_constants.dart';
 /// Extracts a [RouterSession] from ZTE HTTP response cookies.
 ///
 /// ZTE routers use one of two session cookie names across firmware versions:
-///   - stok  — MF79U, MF266 (classification: VERIFIED)
-///   - zsidn — MF297D, MC801A (classification: VERIFIED)
+///   - stok  — MF79U, MF266 (and likely other older models)
+///   - zsidn — MF297D, MC801A (and likely other newer models)
 ///
+/// Both names are VERIFIED from hardware observations.
 /// The extractor tries both and logs which one was found.
 final class ZteSessionExtractor {
   const ZteSessionExtractor({required ProtocolLogger logger})
@@ -63,6 +64,7 @@ final class ZteSessionExtractor {
       return _CookiePair(kZteSessionCookieZsidn, zsidnMatch);
     }
 
+    // Neither cookie was found — protocol violation.
     _logger.logProtocolViolation(
       adapter: 'ZTE',
       operation: 'session_extraction',
@@ -77,10 +79,11 @@ final class ZteSessionExtractor {
     );
   }
 
+  /// Extracts the value of a named cookie from a Set-Cookie header string.
+  /// Returns null if the name is not present.
   String? _extractValue(String header, String cookieName) {
     final pattern = RegExp('(?:^|[;,\\s])$cookieName=([^;,\\s]+)');
-    final match = pattern.firstMatch(header);
-    return match?.group(1);
+    return pattern.firstMatch(header)?.group(1);
   }
 }
 

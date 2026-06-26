@@ -1,37 +1,66 @@
-/// Idiomatic Dart 3 sealed Result type.
-/// Keeps the project free of any Either/dartz dependency.
+import '../errors/failure.dart';
+
+/// A minimal Result<T> sealed type — no dartz dependency.
+///
+/// Usage:
+/// ```dart
+/// final result = await strategy.authenticate(...);
+/// switch (result) {
+///   case Success(:final value): // use value
+///   case ResultFailure(:final failure): // handle failure
+/// }
+/// ```
 sealed class Result<T> {
   const Result();
 
-  /// Execute [onSuccess] or [onFailure] and return R.
-  R when<R>({
-    required R Function(T value) onSuccess,
-    required R Function(Failure failure) onFailure,
-  }) =>
-      switch (this) {
-        Success<T>(:final value) => onSuccess(value),
-        Failure<T>(:final failure) => onFailure(failure),
+  bool get isSuccess => this is Success<T>;
+  bool get isFailure => this is ResultFailure<T>;
+
+  /// Returns the value or throws [StateError] if this is a failure.
+  T get valueOrThrow {
+    final self = this;
+    if (self is Success<T>) return self.value;
+    throw StateError(
+        'Result is a failure: ${(self as ResultFailure<T>).failure}');
+  }
+
+  /// Returns the [Failure] or throws [StateError] if this is a success.
+  Failure get failureOrThrow {
+    final self = this;
+    if (self is ResultFailure<T>) return self.failure;
+    throw StateError('Result is a success');
+  }
+
+  /// Maps the value if successful; propagates failure unchanged.
+  Result<U> map<U>(U Function(T value) transform) => switch (this) {
+        Success(:final value) => Success(transform(value)),
+        ResultFailure(:final failure) => ResultFailure(failure),
       };
 
-  bool get isSuccess => this is Success<T>;
-  bool get isFailure => this is Failure<T>;
-
-  T? get valueOrNull =>
-      this is Success<T> ? (this as Success<T>).value : null;
-
-  core_errors.Failure? get failureOrNull =>
-      this is Failure<T> ? (this as Failure<T>).failure : null;
+  /// Async flat-map over the value; propagates failure unchanged.
+  Future<Result<U>> flatMapAsync<U>(
+    Future<Result<U>> Function(T value) transform,
+  ) async =>
+      switch (this) {
+        Success(:final value) => transform(value),
+        ResultFailure(:final failure) => ResultFailure(failure),
+      };
 }
 
+/// Carries a successfully produced value.
 final class Success<T> extends Result<T> {
   const Success(this.value);
   final T value;
+
+  @override
+  String toString() => 'Success($value)';
 }
 
-final class Failure<T> extends Result<T> {
-  const Failure(this.failure);
-  final core_errors.Failure failure;
-}
+/// Carries a [Failure] describing what went wrong.
+final class ResultFailure<T> extends Result<T> {
+  const ResultFailure(this.failure);
+  final Failure failure;
 
-// Avoid circular import — re-export Failure from errors package.
-import 'package:router_commander_ai/core/errors/failure.dart' as core_errors;
+  @override
+  String toString() => 'Failure(${failure.message})';
+}

@@ -5,6 +5,7 @@ import 'package:router_commander_ai/core/protocol/protocol_logger.dart';
 import 'package:router_commander_ai/features/routers/data/datasources/zte/auth/zte_session_extractor.dart';
 import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
 import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
 
 void main() {
   final extractor =
@@ -56,7 +57,7 @@ void main() {
     });
   });
 
-  // ── priority when both present ────────────────────────────────────────────
+  // ── priority: stok beats zsidn when both present ──────────────────────────
   group('ZteSessionExtractor — priority', () {
     test('prefers stok over zsidn when both present', () {
       const raw = 'stok=first; zsidn=second; Path=/';
@@ -72,10 +73,9 @@ void main() {
   // ── protocol violation: no known cookie ───────────────────────────────────
   group('ZteSessionExtractor — protocol violation', () {
     test('throws SessionException when no known cookie is found', () {
-      const raw = 'PHPSESSID=unknown; Path=/';
       expect(
         () => extractor.extract(
-          rawSetCookie: raw,
+          rawSetCookie: 'PHPSESSID=unknown; Path=/',
           endpoint: endpoint,
           model: model,
         ),
@@ -99,9 +99,8 @@ void main() {
   group('ZteSessionExtractor — session metadata', () {
     test('propagates expiresAt to the session', () {
       final expiry = DateTime(2026, 6, 26, 23, 0);
-      const raw = 'stok=tok; Path=/';
       final session = extractor.extract(
-        rawSetCookie: raw,
+        rawSetCookie: 'stok=tok; Path=/',
         endpoint: endpoint,
         model: model,
         expiresAt: expiry,
@@ -110,13 +109,11 @@ void main() {
     });
 
     test('session is not expired when expiresAt is in the future', () {
-      final expiry = DateTime.now().add(const Duration(hours: 1));
-      const raw = 'stok=tok; Path=/';
       final session = extractor.extract(
-        rawSetCookie: raw,
+        rawSetCookie: 'stok=tok; Path=/',
         endpoint: endpoint,
         model: model,
-        expiresAt: expiry,
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       expect(session.isExpired, isFalse);
     });

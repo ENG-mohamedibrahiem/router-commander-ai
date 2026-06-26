@@ -8,18 +8,19 @@ import '../protocol/zte_auth_variant.dart';
 /// Each [ZteAuthVariant] uses a distinct algorithm confirmed through firmware
 /// JS deobfuscation. This class is a pure function — no I/O, fully testable.
 ///
-/// Do NOT call this with a hardcoded variant. The variant must come from
-/// a runtime capability probe via [ZteAuthenticationStrategy].
+/// Do NOT call this class with a hardcoded variant. The variant must come
+/// from a runtime capability probe.
 final class ZtePasswordHasher {
   const ZtePasswordHasher();
 
   /// Computes the login password string for [variant].
   ///
-  /// [plainPassword] — the raw password as entered by the user.
-  /// [ldToken]       — the LD anti-replay token; ONLY required for
-  ///                   [ZteAuthVariant.sha256Chained]; ignored otherwise.
+  /// - [plainPassword] — the raw password as entered by the user.
+  /// - [ldToken]       — the LD anti-replay token; ONLY required for
+  ///                     [ZteAuthVariant.sha256Chained]; ignored otherwise.
   ///
-  /// Throws [ArgumentError] if [ldToken] is null when variant is sha256Chained.
+  /// Throws [ArgumentError] if [ldToken] is null when variant is
+  /// [ZteAuthVariant.sha256Chained].
   String hash({
     required String plainPassword,
     required ZteAuthVariant variant,
@@ -41,22 +42,27 @@ final class ZtePasswordHasher {
       ZteAuthVariant.sha256Simple => _sha256Simple(plainPassword),
 
       // classification: VERIFIED — base64( password )
-      // Evidence: MF253M legacy firmware confirmed via community captures.
+      // Evidence: MF253M legacy firmware via community captures.
       ZteAuthVariant.base64Only => _base64Only(plainPassword),
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // Private algorithm implementations
+  // ---------------------------------------------------------------------------
 
   String _sha256Chained({
     required String plainPassword,
     required String ldToken,
   }) {
     final innerHash = _sha256Hex(plainPassword);
+    // Result must be UPPERCASE per firmware expectation.
     return _sha256Hex(innerHash + ldToken).toUpperCase();
   }
 
   String _sha256Simple(String plainPassword) {
     final b64 = base64.encode(utf8.encode(plainPassword));
-    return _sha256Hex(b64);
+    return _sha256Hex(b64); // lowercase hex
   }
 
   String _base64Only(String plainPassword) {
@@ -65,7 +71,6 @@ final class ZtePasswordHasher {
 
   String _sha256Hex(String input) {
     final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
+    return sha256.convert(bytes).toString();
   }
 }

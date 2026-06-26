@@ -1,11 +1,17 @@
 /// Protocol element classification used throughout the data layer.
 ///
 /// Every constant, parameter, or parsing assumption in the ZTE (and future)
-/// adapter MUST carry one of these labels:
+/// adapters must carry one of these labels:
 ///
 ///  - VERIFIED     → confirmed from firmware JS, packet captures, or hardware
 ///  - ASSUMED      → plausible based on pattern; must be isolated + guarded
 ///  - EXPERIMENTAL → untested variation; must never affect VERIFIED paths
+///
+/// Usage in code:
+/// ```dart
+/// // classification: VERIFIED — confirmed from MF297D firmware JS
+/// static const String _capabilityField = 'WEB_ATTR_IF_SUPPORT_SHA256';
+/// ```
 enum ProtocolClassification {
   /// Confirmed from firmware JS deobfuscation, packet captures, or physical
   /// hardware testing. Safe to use in production paths.
