@@ -1,30 +1,37 @@
-/// Central constants for the entire application.
-/// All timeouts, retry counts, and network defaults live here.
+/// Compile-time constants for the entire application.
+///
+/// No magic numbers anywhere else in the codebase.
 abstract final class AppConstants {
-  // ── Network timeouts ────────────────────────────────────────────────────────
+  // ── Network ──────────────────────────────────────────────────────────────
 
-  /// Milliseconds to wait for a TCP connection to the router.
-  /// Local LAN — should be fast; 5 s gives headroom for slow firmware.
-  static const int connectTimeoutMs = 5000;
+  /// Default HTTP timeout for every router request.
+  static const Duration connectTimeout = Duration(seconds: 8);
+  static const Duration receiveTimeout = Duration(seconds: 15);
+  static const Duration sendTimeout    = Duration(seconds: 8);
 
-  /// Milliseconds to wait for a response after the connection is open.
-  static const int receiveTimeoutMs = 10000;
+  /// Maximum automatic retry attempts on transient failures.
+  static const int maxRetryAttempts = 2;
 
-  /// Milliseconds to wait when sending a large request body.
-  static const int sendTimeoutMs = 8000;
+  // ── ZTE Protocol ─────────────────────────────────────────────────────────
 
-  // ── Retry policy ────────────────────────────────────────────────────────────
+  /// VERIFIED: ZTE goform endpoint path.
+  static const String zteGoformPath   = '/goform/goform_get_cmd_process';
+  static const String zteSetCmdPath   = '/goform/goform_set_cmd_process';
+  static const String zteLoginCommand = 'LOGIN';
+  static const String zteLogoutCommand = 'LOGOUT';
 
-  /// How many times to retry a failed request before surfacing a Failure.
-  static const int maxRetries = 2;
+  /// VERIFIED: ZTE session TTL before the router evicts the session.
+  static const Duration zteSessionTtl = Duration(minutes: 30);
 
-  /// Base delay (ms) before the first retry. Doubles on each attempt.
-  static const int retryBaseDelayMs = 500;
+  // ── TP-Link Protocol ─────────────────────────────────────────────────────
 
-  // ── Router defaults ─────────────────────────────────────────────────────────
+  static const String tpLinkBasePath = '/cgi-bin/luci/;stok=';
+  static const Duration tpLinkSessionTtl = Duration(minutes: 60);
 
-  /// Gateway IPs tried in order during auto-discovery.
-  static const List<String> defaultGatewaysCandidates = [
+  // ── Discovery ─────────────────────────────────────────────────────────────
+
+  /// Ordered list of gateway candidates to try during auto-discovery.
+  static const List<String> gatewayProbeList = [
     '192.168.1.1',
     '192.168.0.1',
     '192.168.8.1',
@@ -32,38 +39,9 @@ abstract final class AppConstants {
     '192.168.100.1',
   ];
 
-  /// Timeout (ms) for a single gateway probe ping.
-  static const int gatewayProbeTimeoutMs = 2000;
+  static const Duration discoveryProbeTimeout = Duration(seconds: 4);
 
-  // ── Session / storage ───────────────────────────────────────────────────────
-
-  /// Session TTL in minutes (Option C: Hive + TTL).
-  /// Matches typical ZTE/TP-Link idle session timeout.
-  static const int sessionTtlMinutes = 30;
-
-  /// Hive box names.
-  static const String sessionBoxName = 'router_sessions';
-  static const String settingsBoxName = 'app_settings';
-  static const String credentialsBoxName = 'router_credentials';
-
-  // ── ZTE protocol ────────────────────────────────────────────────────────────
-
-  /// ZTE get-command endpoint path.
-  static const String zteGetPath = '/goform/goform_get_cmd_process';
-
-  /// ZTE set-command endpoint path.
-  static const String zteSetPath = '/goform/goform_set_cmd_process';
-
-  /// ZTE auth endpoint path (same as set in most firmware).
-  static const String zteAuthPath = '/goform/goform_set_cmd_process';
-
-  // ── TP-Link protocol ────────────────────────────────────────────────────────
-
-  /// TP-Link JSON-RPC endpoint (STOK injected at runtime).
-  static const String tpLinkBasePath = '/cgi-bin/luci';
-
-  // ── UI ──────────────────────────────────────────────────────────────────────
-
-  /// Polling interval (seconds) for live dashboard data.
-  static const int dashboardPollIntervalSec = 10;
+  // ── Session cache ─────────────────────────────────────────────────────────
+  static const String sessionHiveBox = 'session_cache';
+  static const String sessionHiveKey = 'active_session';
 }

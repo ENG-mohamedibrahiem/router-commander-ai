@@ -1,84 +1,63 @@
 import 'app_exception.dart';
 
-/// Domain-level failure sealed class.
+/// Sealed [Failure] hierarchy — the domain-layer error contract.
 ///
-/// The domain and application layers use [Failure] — they never reference
-/// Dio or HTTP directly. Data-layer code maps [AppException] instances to
-/// [Failure] before returning them through [Result].
+/// Presentation widgets only ever see [Failure]; they never import Dio
+/// or any data-layer type.
 sealed class Failure {
-  const Failure({required this.message, this.cause});
-
+  const Failure({required this.message});
   final String message;
-  final Object? cause;
 
   @override
-  String toString() => '$runtimeType: $message';
+  String toString() => '${runtimeType}: $message';
 }
 
-/// Could not reach the router.
 final class NetworkFailure extends Failure {
-  const NetworkFailure({required super.message, super.cause});
+  const NetworkFailure({required super.message, this.statusCode,
+      this.cause});
+  final int? statusCode;
+  final Object? cause;
 }
 
-/// The router rejected the credentials.
 final class AuthFailure extends Failure {
-  const AuthFailure({required super.message, super.cause});
+  const AuthFailure({required super.message});
 }
 
-/// A session could not be established or has expired.
-final class SessionFailure extends Failure {
-  const SessionFailure({required super.message, super.cause});
-}
-
-/// The response from the router could not be understood.
 final class ParseFailure extends Failure {
-  const ParseFailure({required super.message, super.cause});
+  const ParseFailure({required super.message, this.rawBody});
+  final String? rawBody;
 }
 
-/// The router reported a protocol-level error.
-final class RouterFailure extends Failure {
-  const RouterFailure({
-    required super.message,
-    required this.routerCode,
-    super.cause,
-  });
-
-  final String routerCode;
-}
-
-/// The operation is not supported by this router model.
-final class UnsupportedFailure extends Failure {
-  const UnsupportedFailure({required super.message, super.cause});
-}
-
-/// Request timed out.
 final class TimeoutFailure extends Failure {
-  const TimeoutFailure({required super.message, super.cause});
+  const TimeoutFailure({required super.message, this.timeoutMs});
+  final int? timeoutMs;
+}
+
+final class RouterErrorFailure extends Failure {
+  const RouterErrorFailure({required super.message, this.code});
+  final String? code;
+}
+
+final class UnknownFailure extends Failure {
+  const UnknownFailure({required super.message, this.cause});
+  final Object? cause;
 }
 
 // ---------------------------------------------------------------------------
-// Mapper — single source of truth
+// Mapping helper
 // ---------------------------------------------------------------------------
 
 /// Maps a typed [AppException] to its corresponding [Failure].
-/// This is the only place where the mapping lives — never inline.
+/// Used inside repository guard blocks.
 Failure failureFromException(AppException e) => switch (e) {
-      NetworkException() => NetworkFailure(message: e.message, cause: e.cause),
-      HttpStatusException() =>
-        NetworkFailure(message: e.message, cause: e.cause),
-      AuthException() => AuthFailure(message: e.message, cause: e.cause),
-      SessionException() =>
-        SessionFailure(message: e.message, cause: e.cause),
-      SessionExpiredException() =>
-        SessionFailure(message: e.message, cause: e.cause),
-      ParseException() => ParseFailure(message: e.message, cause: e.cause),
-      RouterErrorException() => RouterFailure(
-          message: e.message,
-          routerCode: e.routerCode,
-          cause: e.cause,
-        ),
-      UnsupportedOperationException() =>
-        UnsupportedFailure(message: e.message, cause: e.cause),
-      TimeoutException() =>
-        TimeoutFailure(message: e.message, cause: e.cause),
+      NetworkException(:final message, :final statusCode) =>
+          NetworkFailure(message: message, statusCode: statusCode, cause: e),
+      AuthException(:final message) =>
+          AuthFailure(message: message),
+      ParseException(:final message, :final rawBody) =>
+          ParseFailure(message: message, rawBody: rawBody),
+      TimeoutException(:final message, :final timeoutMs) =>
+          TimeoutFailure(message: message, timeoutMs: timeoutMs),
+      RouterErrorException(:final message, :final code) =>
+          RouterErrorFailure(message: message, code: code),
     };

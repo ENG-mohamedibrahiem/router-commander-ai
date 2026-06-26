@@ -1,13 +1,11 @@
-import '../errors/failure.dart';
-
-/// A minimal Result<T> sealed type — no dartz dependency.
+/// Sealed [Result] type — domain contract for all async operations.
 ///
 /// Usage:
 /// ```dart
-/// final result = await strategy.authenticate(...);
+/// final result = await repository.login(...);
 /// switch (result) {
-///   case Success(:final value): // use value
-///   case ResultFailure(:final failure): // handle failure
+///   case Success(:final value): ...
+///   case ResultFailure(:final failure): ...
 /// }
 /// ```
 sealed class Result<T> {
@@ -16,51 +14,40 @@ sealed class Result<T> {
   bool get isSuccess => this is Success<T>;
   bool get isFailure => this is ResultFailure<T>;
 
-  /// Returns the value or throws [StateError] if this is a failure.
-  T get valueOrThrow {
-    final self = this;
-    if (self is Success<T>) return self.value;
-    throw StateError(
-        'Result is a failure: ${(self as ResultFailure<T>).failure}');
-  }
+  T? get valueOrNull =>
+      this is Success<T> ? (this as Success<T>).value : null;
 
-  /// Returns the [Failure] or throws [StateError] if this is a success.
-  Failure get failureOrThrow {
-    final self = this;
-    if (self is ResultFailure<T>) return self.failure;
-    throw StateError('Result is a success');
-  }
-
-  /// Maps the value if successful; propagates failure unchanged.
+  /// Transforms [Success] value without touching [ResultFailure].
   Result<U> map<U>(U Function(T value) transform) => switch (this) {
         Success(:final value) => Success(transform(value)),
         ResultFailure(:final failure) => ResultFailure(failure),
       };
 
-  /// Async flat-map over the value; propagates failure unchanged.
-  Future<Result<U>> flatMapAsync<U>(
-    Future<Result<U>> Function(T value) transform,
-  ) async =>
+  /// Flat-maps [Success] value — for chaining async operations.
+  Result<U> flatMap<U>(
+      Result<U> Function(T value) transform) =>
       switch (this) {
         Success(:final value) => transform(value),
         ResultFailure(:final failure) => ResultFailure(failure),
       };
+
+  /// Folds both branches into a single value.
+  U fold<U>({
+    required U Function(T value) onSuccess,
+    required U Function(Failure failure) onFailure,
+  }) =>
+      switch (this) {
+        Success(:final value) => onSuccess(value),
+        ResultFailure(:final failure) => onFailure(failure),
+      };
 }
 
-/// Carries a successfully produced value.
 final class Success<T> extends Result<T> {
   const Success(this.value);
   final T value;
-
-  @override
-  String toString() => 'Success($value)';
 }
 
-/// Carries a [Failure] describing what went wrong.
 final class ResultFailure<T> extends Result<T> {
   const ResultFailure(this.failure);
   final Failure failure;
-
-  @override
-  String toString() => 'Failure(${failure.message})';
 }

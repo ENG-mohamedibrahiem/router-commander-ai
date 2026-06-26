@@ -1,58 +1,57 @@
 import 'dart:io';
 
-import 'package:router_commander_ai/core/config/app_constants.dart';
-
-/// Utility functions for IP address handling and gateway detection.
+/// IP address utilities — gateway detection and validation.
 abstract final class IpUtils {
-  /// Returns true if [ip] is a valid IPv4 address.
-  static bool isValidIpV4(String ip) {
-    final parts = ip.split('.');
-    if (parts.length != 4) return false;
-    return parts.every((p) {
-      final n = int.tryParse(p);
-      return n != null && n >= 0 && n <= 255;
-    });
+  static final _ipv4Regex = RegExp(
+      r'^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$');
+
+  /// Returns true if [address] is a syntactically valid IPv4 string.
+  static bool isValidIpv4(String address) =>
+      _ipv4Regex.hasMatch(address);
+
+  /// Derives the likely gateway from an interface IP by replacing the
+  /// last octet with `.1`.
+  ///
+  /// Example: `192.168.1.105` → `192.168.1.1`
+  static String? deriveGateway(String interfaceIp) {
+    if (!isValidIpv4(interfaceIp)) return null;
+    final parts = interfaceIp.split('.');
+    return '${parts[0]}.${parts[1]}.${parts[2]}.1';
   }
 
-  /// Probes each candidate gateway in [AppConstants.defaultGatewaysCandidates]
-  /// and returns the first one that accepts a TCP connection on port 80.
-  /// Returns null if no gateway responds within the timeout.
-  static Future<String?> detectActiveGateway() async {
-    for (final ip in AppConstants.defaultGatewaysCandidates) {
-      if (await _canReach(ip)) return ip;
+  /// Attempts to detect the default gateway by iterating [NetworkInterface]s.
+  ///
+  /// Returns `null` when detection is not possible (e.g. on web).
+  static Future<String?> detectGateway() async {
+    try {
+      final interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+        includeLinkLocal: false,
+      );
+      for (final iface in interfaces) {
+        for (final addr in iface.addresses) {
+          if (!addr.isLoopback &&
+              !addr.isLinkLocal &&
+              !addr.isMulticast) {
+            final gw = deriveGateway(addr.address);
+            if (gw != null) return gw;
+          }
+        }
+      }
+    } catch (_) {
+      return null;
     }
     return null;
   }
 
-  /// Returns true if [host] accepts a TCP connection on [port] within timeout.
-  static Future<bool> canReachHost(
-    String host, {
-    int port = 80,
-    Duration timeout = const Duration(
-      milliseconds: AppConstants.gatewayProbeTimeoutMs,
-    ),
-  }) =>
-      _canReach(host, port: port, timeout: timeout);
-
-  // ── private ──────────────────────────────────────────────────────────────
-
-  static Future<bool> _canReach(
-    String host, {
-    int port = 80,
-    Duration timeout = const Duration(
-      milliseconds: AppConstants.gatewayProbeTimeoutMs,
-    ),
-  }) async {
-    try {
-      final socket = await Socket.connect(
-        host,
-        port,
-        timeout: timeout,
-      );
-      socket.destroy();
-      return true;
-    } catch (_) {
-      return false;
-    }
+  /// Normalises a host input: strips protocol prefix, trailing slashes.
+  /// Returns just the IP or hostname.
+  ///
+  /// Example: `"http://192.168.1.1/"` → `"192.168.1.1"`
+  static String normaliseHost(String raw) {
+    var s = raw.trim();
+    s = s.replaceFirst(RegExp(r'^https?://'), '');
+    s = s.replaceAll(RegExp(r'/.*$'), '');
+    return s;
   }
 }
