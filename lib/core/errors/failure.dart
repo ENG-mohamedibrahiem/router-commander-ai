@@ -1,82 +1,40 @@
-import 'app_exception.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
 
-/// Domain-level failure sealed class.
-///
-/// [Failure] is what the domain and application layers use — they never
-/// reference Dio or HTTP directly. Data-layer code maps [AppException]
-/// instances to [Failure] before returning them through [Result].
+/// Domain-level Failure — presentation layer consumes this.
+/// Clean from Dio and any data-layer types.
 sealed class Failure {
-  const Failure({required this.message, this.cause});
-
+  const Failure({required this.message});
   final String message;
-  final Object? cause;
+
+  /// Map an [AppException] to the correct [Failure] subtype.
+  factory Failure.fromException(AppException e) => switch (e) {
+        NetworkException() => NetworkFailure(message: e.message),
+        AuthException() => AuthFailure(message: e.message),
+        ParseException() => ParseFailure(message: e.message),
+        TimeoutException() => TimeoutFailure(message: e.message),
+        UnknownException() => UnknownFailure(message: e.message),
+      };
 
   @override
-  String toString() => '$runtimeType: $message';
+  String toString() => '$runtimeType(message: $message)';
 }
 
-/// Could not reach the router.
 final class NetworkFailure extends Failure {
-  const NetworkFailure({required super.message, super.cause});
+  const NetworkFailure({required super.message});
 }
 
-/// The router rejected the credentials.
 final class AuthFailure extends Failure {
-  const AuthFailure({required super.message, super.cause});
+  const AuthFailure({required super.message});
 }
 
-/// A session could not be established or has expired.
-final class SessionFailure extends Failure {
-  const SessionFailure({required super.message, super.cause});
-}
-
-/// The response from the router could not be understood.
 final class ParseFailure extends Failure {
-  const ParseFailure({required super.message, super.cause});
+  const ParseFailure({required super.message});
 }
 
-/// The router reported a protocol-level error.
-final class RouterFailure extends Failure {
-  const RouterFailure({
-    required super.message,
-    required this.routerCode,
-    super.cause,
-  });
-
-  final String routerCode;
-}
-
-/// The operation is not supported by this router model.
-final class UnsupportedFailure extends Failure {
-  const UnsupportedFailure({required super.message, super.cause});
-}
-
-/// Request timed out.
 final class TimeoutFailure extends Failure {
-  const TimeoutFailure({required super.message, super.cause});
+  const TimeoutFailure({required super.message});
 }
 
-// ---------------------------------------------------------------------------
-// Convenience mapper — the ONLY place where AppException → Failure lives.
-// ---------------------------------------------------------------------------
-
-Failure failureFromException(AppException e) => switch (e) {
-      NetworkException() => NetworkFailure(message: e.message, cause: e.cause),
-      HttpStatusException() =>
-        NetworkFailure(message: e.message, cause: e.cause),
-      AuthException() => AuthFailure(message: e.message, cause: e.cause),
-      SessionException() =>
-        SessionFailure(message: e.message, cause: e.cause),
-      SessionExpiredException() =>
-        SessionFailure(message: e.message, cause: e.cause),
-      ParseException() => ParseFailure(message: e.message, cause: e.cause),
-      RouterErrorException() => RouterFailure(
-          message: e.message,
-          routerCode: e.routerCode,
-          cause: e.cause,
-        ),
-      UnsupportedOperationException() =>
-        UnsupportedFailure(message: e.message, cause: e.cause),
-      TimeoutException() =>
-        TimeoutFailure(message: e.message, cause: e.cause),
-    };
+final class UnknownFailure extends Failure {
+  const UnknownFailure({required super.message});
+}

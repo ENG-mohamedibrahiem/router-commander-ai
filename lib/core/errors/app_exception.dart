@@ -1,91 +1,37 @@
-/// Sealed exception hierarchy for the router_commander_ai application.
-///
-/// Every exception type maps to a specific failure domain so that callers
-/// can switch exhaustively without catching [Object] or [Exception].
-/// Replaces the previous flat AppException class.
+/// Sealed exception hierarchy.
+/// Data layer catches Dio/platform errors and maps them to AppException.
+/// Domain layer never sees Dio.
 sealed class AppException implements Exception {
-  const AppException({required this.message, this.cause});
+  const AppException({required this.message, this.statusCode});
 
   final String message;
-
-  /// The underlying cause, if any (e.g. a DioException or a FormatException).
-  final Object? cause;
+  final int? statusCode;
 
   @override
-  String toString() =>
-      '$runtimeType: $message${cause != null ? ' (caused by: $cause)' : ''}';
+  String toString() => '$runtimeType(message: $message, statusCode: $statusCode)';
 }
 
-// ---------------------------------------------------------------------------
-// Network layer
-// ---------------------------------------------------------------------------
-
-/// The router host was unreachable or the connection timed out.
+/// HTTP/socket level errors (no connectivity, DNS fail, etc.)
 final class NetworkException extends AppException {
-  const NetworkException({required super.message, super.cause});
+  const NetworkException({required super.message, super.statusCode});
 }
 
-/// An HTTP response was received but carried an unexpected status code.
-final class HttpStatusException extends AppException {
-  const HttpStatusException({
-    required super.message,
-    required this.statusCode,
-    super.cause,
-  });
-
-  final int statusCode;
-}
-
-// ---------------------------------------------------------------------------
-// Authentication layer
-// ---------------------------------------------------------------------------
-
-/// The router rejected the supplied credentials.
+/// 401 / wrong credentials / session expired.
 final class AuthException extends AppException {
-  const AuthException({required super.message, super.cause});
+  const AuthException({required super.message, super.statusCode});
 }
 
-/// A valid session could not be extracted from the router response.
-final class SessionException extends AppException {
-  const SessionException({required super.message, super.cause});
-}
-
-/// The existing session has expired and must be renewed.
-final class SessionExpiredException extends AppException {
-  const SessionExpiredException({required super.message, super.cause});
-}
-
-// ---------------------------------------------------------------------------
-// Protocol layer
-// ---------------------------------------------------------------------------
-
-/// The router returned a response that could not be parsed.
+/// JSON decode failure or unexpected schema.
 final class ParseException extends AppException {
-  const ParseException({required super.message, super.cause});
+  const ParseException({required super.message, super.statusCode});
 }
 
-/// The router returned a recognised error code in the response body.
-final class RouterErrorException extends AppException {
-  const RouterErrorException({
-    required super.message,
-    required this.routerCode,
-    super.cause,
-  });
-
-  /// The raw error string returned by the router firmware (e.g. "TE_WRONG_PASSWORD").
-  final String routerCode;
-}
-
-/// The router does not support the requested operation.
-final class UnsupportedOperationException extends AppException {
-  const UnsupportedOperationException({required super.message, super.cause});
-}
-
-// ---------------------------------------------------------------------------
-// Timeout
-// ---------------------------------------------------------------------------
-
-/// A request exceeded its allowed time budget.
+/// Request exceeded configured timeout.
 final class TimeoutException extends AppException {
-  const TimeoutException({required super.message, super.cause});
+  const TimeoutException({required super.message, super.statusCode});
+}
+
+/// Any error that does not fit the above categories.
+final class UnknownException extends AppException {
+  const UnknownException({required super.message, super.statusCode});
 }
