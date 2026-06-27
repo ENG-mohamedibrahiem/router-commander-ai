@@ -1,21 +1,20 @@
 import 'package:dio/dio.dart';
 
-import '../../../../../core/errors/app_exception.dart';
-import '../../../../../core/errors/failure.dart';
-import '../../../../../core/protocol/protocol_classification.dart';
-import '../../../../../core/protocol/protocol_logger.dart';
-import '../../../../../core/utils/result.dart';
-import '../../../domain/adapters/router_adapter.dart';
-import '../../../domain/entities/connected_device.dart';
-import '../../../domain/entities/dsl_information.dart';
-import '../../../domain/entities/router_credentials.dart';
-import '../../../domain/entities/router_detection_result.dart';
-import '../../../domain/entities/router_device_info.dart';
-import '../../../domain/entities/router_endpoint.dart';
-import '../../../domain/entities/router_model.dart';
-import '../../../domain/entities/router_session.dart';
-import '../../../domain/entities/wan_status.dart';
-import '../../../domain/entities/wifi_information.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
+import 'package:router_commander_ai/core/errors/failure.dart';
+import 'package:router_commander_ai/core/protocol/protocol_classification.dart';
+import 'package:router_commander_ai/core/protocol/protocol_logger.dart';
+import 'package:router_commander_ai/features/routers/domain/adapters/router_adapter.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/connected_device.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/dsl_information.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_credentials.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_detection_result.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_device_info.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wan_status.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wifi_information.dart';
 import 'auth/zte_authentication_strategy.dart';
 import 'auth/zte_password_hasher.dart';
 import 'auth/zte_session_extractor.dart';
@@ -40,7 +39,7 @@ final class ZteRouterAdapter implements RouterAdapter {
         _authStrategy = ZteAuthenticationStrategy(
           httpClient: ZteDioHttpClient(dio: dio),
           passwordHasher: const ZtePasswordHasher(),
-          sessionExtractor: const ZteSessionExtractor(),
+          sessionExtractor: ZteSessionExtractor(logger: logger),
           logger: logger,
         ),
         _logger = logger;
@@ -78,14 +77,17 @@ final class ZteRouterAdapter implements RouterAdapter {
       );
       final hasCapability = body.containsKey(kZteAuthCapabilityField);
       return RouterDetectionResult(
-        isCompatible: hasCapability,
+        endpoint: endpoint,
+        model: hasCapability ? supportedModel : RouterModel.unknown,
         confidence: hasCapability ? 0.95 : 0.0,
-        detectedBrand: hasCapability ? 'ZTE' : null,
+        evidence: hasCapability ? ['ZTE capability field found'] : [],
       );
     } catch (_) {
-      return const RouterDetectionResult(
-        isCompatible: false,
+      return RouterDetectionResult(
+        endpoint: endpoint,
+        model: RouterModel.unknown,
         confidence: 0.0,
+        evidence: const [],
       );
     }
   }

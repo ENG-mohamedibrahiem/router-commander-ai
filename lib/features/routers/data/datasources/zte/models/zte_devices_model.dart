@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../../../../../domain/entities/connected_device.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/connected_device.dart';
 
 /// Parses the ZTE host_info JSON blob into a list of [ConnectedDevice].
 ///
@@ -45,10 +45,12 @@ final class ZteDevicesModel {
     final ip = _str(d['ip_addr']);
     if (ip == null) return null; // IP is minimum viable data.
     return ConnectedDevice(
-      hostname: _str(d['HostName']),
+      name: _str(d['HostName']) ?? 'Unknown',
       ipAddress: ip,
       macAddress: _str(d['mac_addr']),
+      interfaceType: 'unknown',
       isActive: d['isActive']?.toString() == '1',
+      leaseExpiresAt: null,
     );
   }
 

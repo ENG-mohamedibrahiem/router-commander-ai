@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 
-import '../core/config/app_breakpoints.dart';
-import '../core/config/app_constants.dart';
-import '../l10n/app_localizations.dart';
-import '../l10n/application/app_locale_controller.dart';
+import 'package:router_commander_ai/core/config/app_breakpoints.dart';
+import 'package:router_commander_ai/core/config/app_constants.dart';
+import 'package:router_commander_ai/l10n/app_localizations.dart';
+import 'package:router_commander_ai/l10n/application/app_locale_controller.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 import 'theme/application/app_theme_mode_controller.dart';

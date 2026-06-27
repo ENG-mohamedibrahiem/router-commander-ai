@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
-import '../protocol/zte_auth_variant.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_auth_variant.dart';
 
 /// Computes the hashed password string expected by the ZTE login endpoint.
 ///

@@ -83,3 +83,11 @@ final class TimeoutException extends AppException {
   });
   final int? timeoutMs;
 }
+
+// ---------------------------------------------------------------------------
+// Unknown / fallback
+// ---------------------------------------------------------------------------
+
+final class UnknownException extends AppException {
+  const UnknownException({required super.message, super.cause});
+}

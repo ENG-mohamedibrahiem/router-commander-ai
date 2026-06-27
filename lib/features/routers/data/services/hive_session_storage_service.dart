@@ -2,11 +2,11 @@ import 'dart:convert';
 
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../domain/entities/router_brand.dart';
-import '../../domain/entities/router_endpoint.dart';
-import '../../domain/entities/router_model.dart';
-import '../../domain/entities/router_session.dart';
-import '../../domain/services/session_storage_contract.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
+import 'package:router_commander_ai/features/routers/domain/services/session_storage_contract.dart';
 
 /// Hive-backed [SessionStorageContract] implementation (Option C — TTL).
 ///
@@ -15,8 +15,7 @@ import '../../domain/services/session_storage_contract.dart';
 ///
 /// Box name: [kSessionBoxName]. Must be opened during app bootstrap.
 final class HiveSessionStorageService implements SessionStorageContract {
-  const HiveSessionStorageService({required Box<String> box})
-      : _box = box;
+  const HiveSessionStorageService({required this._box});
 
   final Box<String> _box;
 

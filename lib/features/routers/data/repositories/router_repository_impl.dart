@@ -1,19 +1,20 @@
-import '../../../../core/errors/app_exception.dart';
-import '../../../../core/errors/failure.dart';
-import '../../../../core/utils/result.dart';
-import '../../domain/entities/connected_device.dart';
-import '../../domain/entities/dsl_information.dart';
-import '../../domain/entities/router_brand.dart';
-import '../../domain/entities/router_credentials.dart';
-import '../../domain/entities/router_detection_result.dart';
-import '../../domain/entities/router_device_info.dart';
-import '../../domain/entities/router_endpoint.dart';
-import '../../domain/entities/router_session.dart';
-import '../../domain/entities/wan_status.dart';
-import '../../domain/entities/wifi_information.dart';
-import '../../domain/factories/router_adapter_factory.dart';
-import '../../domain/repositories/router_repository.dart';
-import '../../domain/services/session_storage_contract.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
+import 'package:router_commander_ai/core/errors/failure.dart';
+import 'package:router_commander_ai/core/utils/result.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/connected_device.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/dsl_information.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_credentials.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_detection_result.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_device_info.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wan_status.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wifi_information.dart';
+import 'package:router_commander_ai/features/routers/domain/factories/router_adapter_factory.dart';
+import 'package:router_commander_ai/features/routers/domain/repositories/router_repository.dart';
+import 'package:router_commander_ai/features/routers/domain/services/session_storage_contract.dart';
 
 /// Concrete [RouterRepository].
 ///
@@ -22,10 +23,9 @@ import '../../domain/services/session_storage_contract.dart';
 /// the presentation layer never sees raw exceptions.
 final class RouterRepositoryImpl implements RouterRepository {
   const RouterRepositoryImpl({
-    required RouterAdapterFactory factory,
-    required SessionStorageContract sessionStorage,
-  })  : _factory = factory,
-        _sessionStorage = sessionStorage;
+    required this._factory,
+    required this._sessionStorage,
+  });
 
   final RouterAdapterFactory _factory;
   final SessionStorageContract _sessionStorage;
@@ -40,9 +40,11 @@ final class RouterRepositoryImpl implements RouterRepository {
     return _guard(() async {
       final adapter = await _factory.detectAdapter(endpoint);
       if (adapter == null) {
-        return const RouterDetectionResult(
-          isCompatible: false,
+        return RouterDetectionResult(
+          endpoint: endpoint,
+          model: RouterModel.unknown,
           confidence: 0.0,
+          evidence: const [],
         );
       }
       return adapter.detect(endpoint);

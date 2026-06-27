@@ -42,6 +42,21 @@
   "lightTheme": "فاتح",
   "darkTheme": "داكن",
   "language": "اللغة",
-  "english": "English",
-  "arabic": "العربية"
+  "english": "الإنجليزية",
+  "arabic": "العربية",
+  "wanIp": "عنوان WAN IP",
+  "wanIpNotAvailable": "غير متوفر",
+  "connected": "متصل",
+  "connecting": "جاري الاتصال...",
+  "connectionFailed": "فشل الاتصال",
+  "uptime": "مدة التشغيل",
+  "activeDevices": "الأجهزة النشطة",
+  "dashboardEmptyStateMessage": "يرجى الاتصال بجهاز راوتر من علامة تبويب الراوترات لعرض الإحصائيات الحية.",
+  "addRouterTitle": "إضافة راوتر",
+  "routerNameLabel": "اسم الراوتر",
+  "ipAddressLabel": "عنوان IP",
+  "usernameLabel": "اسم المستخدم",
+  "passwordLabel": "كلمة المرور",
+  "saveAndConnect": "حفظ واتصال",
+  "connect": "اتصال"
 }

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_constants.dart';
+import 'package:router_commander_ai/core/config/app_constants.dart';
 
 /// Provides the singleton [Dio] instance configured for router communication.
 ///

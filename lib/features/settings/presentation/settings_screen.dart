@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme/application/app_theme_mode_controller.dart';
-import '../../../core/config/app_spacing.dart';
-import '../../../core/shared/widgets/app_page.dart';
-import '../../../core/shared/widgets/app_section_header.dart';
-import '../../../core/shared/widgets/commander_card.dart';
-import '../../../l10n/application/app_locale_controller.dart';
-import '../../../l10n/l10n.dart';
+import 'package:router_commander_ai/app/theme/application/app_theme_mode_controller.dart';
+import 'package:router_commander_ai/core/config/app_spacing.dart';
+import 'package:router_commander_ai/core/shared/widgets/app_page.dart';
+import 'package:router_commander_ai/core/shared/widgets/app_section_header.dart';
+import 'package:router_commander_ai/core/shared/widgets/commander_card.dart';
+import 'package:router_commander_ai/l10n/application/app_locale_controller.dart';
+import 'package:router_commander_ai/l10n/l10n.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});

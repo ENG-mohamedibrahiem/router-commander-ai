@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../config/app_spacing.dart';
+import 'package:router_commander_ai/core/config/app_spacing.dart';
 import 'commander_card.dart';
 
 class FeatureEmptyState extends StatelessWidget {

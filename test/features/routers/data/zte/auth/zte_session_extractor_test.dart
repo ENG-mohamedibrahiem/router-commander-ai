@@ -9,9 +9,9 @@ import 'package:router_commander_ai/features/routers/domain/entities/router_bran
 
 void main() {
   final extractor =
-      ZteSessionExtractor(logger: const SilentProtocolLogger());
+      ZteSessionExtractor(logger: const ProtocolLogger());
 
-  final endpoint = RouterEndpoint.fromHost('192.168.0.1');
+  final endpoint = const RouterEndpoint(host: '192.168.0.1', port: 80, useHttps: false);
   final model = RouterModel(
     brand: RouterBrand.zte,
     modelName: 'MF297D',

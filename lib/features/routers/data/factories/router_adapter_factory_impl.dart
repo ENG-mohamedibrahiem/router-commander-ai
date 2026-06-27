@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 
-import '../../../../core/protocol/protocol_logger.dart';
-import '../../domain/adapters/router_adapter.dart';
-import '../../domain/entities/router_brand.dart';
-import '../../domain/entities/router_endpoint.dart';
-import '../../domain/factories/router_adapter_factory.dart';
-import '../datasources/zte/zte_dio_http_client.dart';
-import '../datasources/zte/zte_router_adapter.dart';
+import 'package:router_commander_ai/core/protocol/protocol_logger.dart';
+import 'package:router_commander_ai/features/routers/domain/adapters/router_adapter.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/factories/router_adapter_factory.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/tplink/tp_link_router_adapter.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/zte_router_adapter.dart';
 
 /// Concrete [RouterAdapterFactory] — registers all brand adapters.
 ///
@@ -31,7 +31,10 @@ final class RouterAdapterFactoryImpl implements RouterAdapterFactory {
         dio: dio,
         logger: logger,
       ),
-      // RouterBrand.tpLink: TpLinkRouterAdapter(dio: dio, logger: logger),
+      RouterBrand.tpLink: TpLinkRouterAdapter(
+        dio: dio, 
+        logger: logger,
+      ),
       // Add future brands here — zero changes to domain or presentation.
     };
   }
@@ -60,7 +63,7 @@ final class RouterAdapterFactoryImpl implements RouterAdapterFactory {
       if (adapter == null) continue;
       try {
         final result = await adapter.detect(endpoint);
-        if (result.isCompatible && result.confidence >= 0.5) {
+        if (result.isSupported && result.confidence >= 0.5) {
           return adapter;
         }
       } catch (_) {

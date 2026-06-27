@@ -1,6 +1,6 @@
-import '../adapters/router_adapter.dart';
-import '../entities/router_brand.dart';
-import '../entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/adapters/router_adapter.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
 
 /// Domain factory contract — creates the correct [RouterAdapter] for a brand.
 ///

@@ -1,4 +1,4 @@
-import '../../../../../domain/entities/wan_status.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wan_status.dart';
 
 /// Maps ZTE JSON fields for WAN / internet status to [WanStatus].
 ///
@@ -29,11 +29,13 @@ final class ZteWanModel {
   }
 
   WanStatus toEntity() => WanStatus(
-        isConnected: wanState == 'ppp_connected',
+        connectionStatus: wanState ?? 'unknown',
         ipAddress: wanIp,
         gateway: wanGateway,
-        dns: dns,
-        connectionType: wanType,
+        primaryDns: dns,
+        secondaryDns: null,
+        uptime: null,
+        protocol: wanType,
       );
 
   static String? _str(dynamic v) {

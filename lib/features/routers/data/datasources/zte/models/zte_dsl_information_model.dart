@@ -1,5 +1,5 @@
-import '../../../../../../features/routers/domain/entities/dsl_information.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/dsl_information.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 
 /// ZTE DSL field constants.
 ///
@@ -47,13 +47,14 @@ final class ZteDslInformationModel {
     }
 
     return DslInformation(
-      status: field(kZteFieldDslStatus),
+      status: field(kZteFieldDslStatus) ?? 'unknown',
       upstreamRateKbps: parseKbps(kZteFieldDslUprate),
       downstreamRateKbps: parseKbps(kZteFieldDslDownrate),
       upstreamSnrDb: parseDb(kZteFieldDslUpsnr),
       downstreamSnrDb: parseDb(kZteFieldDslDownsnr),
       upstreamAttenuationDb: parseDb(kZteFieldDslUpattn),
       downstreamAttenuationDb: parseDb(kZteFieldDslDownattn),
+      lineMode: null,
     );
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/config/app_breakpoints.dart';
-import '../../l10n/l10n.dart';
+import 'package:router_commander_ai/core/config/app_breakpoints.dart';
+import 'package:router_commander_ai/l10n/l10n.dart';
 
 class RouterCommanderShell extends StatelessWidget {
   const RouterCommanderShell({

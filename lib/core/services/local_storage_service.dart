@@ -12,13 +12,14 @@ class LocalStorageService {
   late Box<dynamic> _sessionBox;
   late Box<dynamic> _settingsBox;
   late Box<dynamic> _credentialsBox;
+  late Box<dynamic> _routersBox;
 
   /// Must be called once during app bootstrap (after Hive.initFlutter).
   Future<void> init() async {
     _sessionBox = await Hive.openBox<dynamic>(AppConstants.sessionBoxName);
     _settingsBox = await Hive.openBox<dynamic>(AppConstants.settingsBoxName);
-    _credentialsBox =
-        await Hive.openBox<dynamic>(AppConstants.credentialsBoxName);
+    _credentialsBox = await Hive.openBox<dynamic>(AppConstants.credentialsBoxName);
+    _routersBox = await Hive.openBox<dynamic>(AppConstants.routersBoxName);
   }
 
   // ── Session (with TTL) ─────────────────────────────────────────────────────
@@ -82,4 +83,25 @@ class LocalStorageService {
       _credentialsBox.delete(routerId);
 
   Future<void> clearAllCredentials() => _credentialsBox.clear();
+
+  // ── Routers ────────────────────────────────────────────────────────────────
+
+  Future<void> saveRouterProfile(String id, Map<String, dynamic> data) =>
+      _routersBox.put(id, data);
+
+  Map<String, dynamic>? readRouterProfile(String id) {
+    final raw = _routersBox.get(id) as Map?;
+    return raw == null ? null : Map<String, dynamic>.from(raw);
+  }
+
+  List<Map<String, dynamic>> readAllRouterProfiles() {
+    return _routersBox.values
+        .whereType<Map<dynamic, dynamic>>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  Future<void> deleteRouterProfile(String id) => _routersBox.delete(id);
+
+  Future<void> clearAllRouterProfiles() => _routersBox.clear();
 }

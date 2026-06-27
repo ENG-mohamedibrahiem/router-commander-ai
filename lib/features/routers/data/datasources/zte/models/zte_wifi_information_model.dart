@@ -1,5 +1,5 @@
-import '../../../../../../features/routers/domain/entities/wifi_information.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wifi_information.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 
 /// ZTE WiFi field constants — 2.4 GHz band.
 ///
@@ -40,12 +40,26 @@ final class ZteWifiInformationModel {
     bool isEnabled(String key) => field(key) == kZteWifiEnabledValue;
 
     return WifiInformation(
-      isEnabled: isEnabled(kZteFieldWifiEnable),
-      ssid: field(kZteFieldWifiSsid),
-      channel: int.tryParse(field(kZteFieldWifiChannel) ?? ''),
-      is5gEnabled: isEnabled(kZteFieldWifi5gEnable),
-      ssid5g: field(kZteFieldWifi5gSsid),
-      channel5g: int.tryParse(field(kZteFieldWifi5gChannel) ?? ''),
+      radios: [
+        if (field(kZteFieldWifiSsid) != null)
+          WifiRadioInformation(
+            band: '2.4GHz',
+            enabled: isEnabled(kZteFieldWifiEnable),
+            ssid: field(kZteFieldWifiSsid)!,
+            macAddress: null,
+            channel: int.tryParse(field(kZteFieldWifiChannel) ?? '') ?? 0,
+            securityMode: null,
+          ),
+        if (field(kZteFieldWifi5gSsid) != null)
+          WifiRadioInformation(
+            band: '5GHz',
+            enabled: isEnabled(kZteFieldWifi5gEnable),
+            ssid: field(kZteFieldWifi5gSsid)!,
+            macAddress: null,
+            channel: int.tryParse(field(kZteFieldWifi5gChannel) ?? '') ?? 0,
+            securityMode: null,
+          ),
+      ],
     );
   }
 }

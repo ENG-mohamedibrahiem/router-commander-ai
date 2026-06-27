@@ -7,7 +7,7 @@
 ///   // classification: VERIFIED — <evidence>
 ///   // classification: ASSUMED  — <rationale + fallback>
 ///   // classification: EXPERIMENTAL — <why + guard required>
-library zte_protocol_constants;
+library;
 
 /// The single HTTP endpoint for ALL read operations on ZTE routers.
 ///

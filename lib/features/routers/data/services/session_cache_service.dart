@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../domain/entities/router_endpoint.dart';
-import '../../domain/entities/router_model.dart';
-import '../../domain/entities/router_session.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
 
 /// Persists [RouterSession] to Hive with a 30-minute TTL.
 ///
@@ -10,7 +11,6 @@ import '../../domain/entities/router_session.dart';
 /// Expired sessions are never returned; they are purged on read.
 final class SessionCacheService {
   static const String _boxName = 'session_cache';
-  static const Duration _ttl = Duration(minutes: 30);
   static const String _key = 'active_session';
 
   Future<void> save(RouterSession session) async {
@@ -51,10 +51,11 @@ final class SessionCacheService {
         'id': s.id,
         'host': s.endpoint.host,
         'port': s.endpoint.port,
-        'scheme': s.endpoint.scheme,
-        'brand': s.model.brand,
-        'series': s.model.series,
-        'firmware': s.model.firmwarePattern,
+        'useHttps': s.endpoint.useHttps,
+        'brand': s.model.brand.name,
+        'modelName': s.model.modelName,
+        'hardwareVersion': s.model.hardwareVersion,
+        'firmwareVersion': s.model.firmwareVersion,
         'createdAt': s.createdAt.toIso8601String(),
         'expiresAt': s.expiresAt?.toIso8601String(),
         'authToken': s.authToken,
@@ -67,12 +68,13 @@ final class SessionCacheService {
         endpoint: RouterEndpoint(
           host: m['host'] as String,
           port: m['port'] as int,
-          scheme: m['scheme'] as String,
+          useHttps: m['useHttps'] as bool? ?? false,
         ),
         model: RouterModel(
-          brand: m['brand'] as String,
-          series: m['series'] as String,
-          firmwarePattern: m['firmware'] as String,
+          brand: RouterBrand.fromString(m['brand'] as String? ?? 'unknown'),
+          modelName: m['modelName'] as String? ?? '',
+          hardwareVersion: m['hardwareVersion'] as String?,
+          firmwareVersion: m['firmwareVersion'] as String?,
         ),
         createdAt: DateTime.parse(m['createdAt'] as String),
         expiresAt: m['expiresAt'] != null

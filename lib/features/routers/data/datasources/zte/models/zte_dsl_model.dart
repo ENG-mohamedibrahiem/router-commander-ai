@@ -1,4 +1,4 @@
-import '../../../../../domain/entities/dsl_information.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/dsl_information.dart';
 
 /// Maps ZTE JSON fields for DSL line statistics to [DslInformation].
 ///
@@ -36,13 +36,14 @@ final class ZteDslModel {
   }
 
   DslInformation toEntity() => DslInformation(
-        snrDownDb: _parseDouble(snrDown),
-        snrUpDb: _parseDouble(snrUp),
-        attenuationDownDb: _parseDouble(attenuationDown),
-        attenuationUpDb: _parseDouble(attenuationUp),
-        syncDownKbps: _parseInt(syncDown),
-        syncUpKbps: _parseInt(syncUp),
-        lineState: lineState,
+        status: lineState ?? 'unknown',
+        upstreamRateKbps: _parseInt(syncUp),
+        downstreamRateKbps: _parseInt(syncDown),
+        upstreamSnrDb: _parseDouble(snrUp),
+        downstreamSnrDb: _parseDouble(snrDown),
+        upstreamAttenuationDb: _parseDouble(attenuationUp),
+        downstreamAttenuationDb: _parseDouble(attenuationDown),
+        lineMode: null,
       );
 
   static String? _str(dynamic v) {

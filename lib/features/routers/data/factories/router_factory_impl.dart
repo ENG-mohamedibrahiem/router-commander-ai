@@ -1,8 +1,8 @@
-import '../../domain/adapters/router_adapter.dart';
-import '../../domain/entities/router_detection_result.dart';
-import '../../domain/entities/router_model.dart';
-import '../../domain/factories/router_factory.dart';
-import '../../domain/services/router_detection_engine.dart'; // UnsupportedRouterException
+import 'package:router_commander_ai/features/routers/domain/adapters/router_adapter.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_detection_result.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/factories/router_factory.dart';
+import 'package:router_commander_ai/features/routers/domain/services/router_detection_engine.dart'; // UnsupportedRouterException
 
 class RouterFactoryImpl implements RouterFactory {
   /// Accepts adapters via constructor injection so the factory

@@ -1,23 +1,21 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import '../../../../../domain/entities/router_endpoint.dart';
-import '../../../../../../../core/errors/app_exception.dart';
-import '../../../../../../core/network/dio_client.dart';
-import '../auth/zte_authentication_strategy.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
+import 'protocol/zte_protocol_constants.dart';
 
-/// Dio-backed implementation of [ZteHttpClient].
-///
-/// Handles the ZTE-specific quirks:
-///   - Mandatory `Referer` header on every request (VERIFIED)
-///   - Form-encoded POST body (VERIFIED)
-///   - Raw `Set-Cookie` header capture for session extraction (VERIFIED)
-final class ZteHttpClientImpl implements ZteHttpClient {
+class ZtePostResult {
+  const ZtePostResult(this.statusCode, this.body, {this.setCookieHeader});
+  final int statusCode;
+  final String body;
+  final String? setCookieHeader;
+}
+
+final class ZteHttpClientImpl {
   const ZteHttpClientImpl(this._dio);
 
   final Dio _dio;
 
-  @override
   Future<Map<String, dynamic>> get(
     RouterEndpoint endpoint,
     String path, {
@@ -47,7 +45,6 @@ final class ZteHttpClientImpl implements ZteHttpClient {
     }
   }
 
-  @override
   Future<ZtePostResult> post(
     RouterEndpoint endpoint,
     String path, {
@@ -75,13 +72,12 @@ final class ZteHttpClientImpl implements ZteHttpClient {
         throw const ParseException(message: 'ZTE POST returned empty body.');
       }
 
-      final setCookie = response.headers
-          .map[kZteSetCookieHeader]
-          ?.join('; ');
+      final cookies = response.headers.map['set-cookie']?.join('; ');
 
       return ZtePostResult(
-        body: jsonDecode(rawData) as Map<String, dynamic>,
-        setCookieHeader: setCookie,
+        response.statusCode ?? 200,
+        rawData,
+        setCookieHeader: cookies,
       );
     } on DioException catch (e) {
       throw _mapDio(e);

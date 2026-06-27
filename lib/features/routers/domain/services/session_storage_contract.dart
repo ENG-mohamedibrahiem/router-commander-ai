@@ -1,5 +1,5 @@
-import '../entities/router_endpoint.dart';
-import '../entities/router_session.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
 
 /// Domain contract for session persistence with TTL (Option C).
 ///

@@ -1,4 +1,4 @@
-import '../../../../../domain/entities/wifi_information.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wifi_information.dart';
 
 /// Maps ZTE JSON fields for WiFi configuration to [WifiInformation].
 ///
@@ -30,11 +30,17 @@ final class ZteWifiModel {
   }
 
   WifiInformation toEntity() => WifiInformation(
-        ssid: ssid,
-        authMode: authMode,
-        band: band,
-        channel: channel,
-        isEnabled: enabled,
+        radios: [
+          if (ssid != null)
+            WifiRadioInformation(
+              band: band ?? 'unknown',
+              enabled: enabled ?? false,
+              ssid: ssid!,
+              macAddress: null,
+              channel: int.tryParse(channel ?? '') ?? 0,
+              securityMode: authMode,
+            ),
+        ],
       );
 
   static String? _str(dynamic v) {

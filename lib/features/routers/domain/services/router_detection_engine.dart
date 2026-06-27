@@ -1,6 +1,6 @@
-import '../adapters/router_adapter.dart';
-import '../entities/router_detection_result.dart';
-import '../entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/adapters/router_adapter.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_detection_result.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
 
 abstract interface class RouterDetectionEngine {
   Future<RouterDetectionResult> detectOne(RouterEndpoint endpoint);

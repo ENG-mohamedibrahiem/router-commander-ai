@@ -2,6 +2,8 @@
 ///
 /// Never scatter magic numbers across the codebase — add them here.
 abstract final class AppConstants {
+  static const String appName = 'Router Commander AI';
+
   // Network timeouts (milliseconds)
   static const int connectTimeoutMs = 5000;
   static const int sendTimeoutMs = 10000;
@@ -21,7 +23,20 @@ abstract final class AppConstants {
   static const int maxRetryAttempts = 2;
   static const int retryDelayMs = 800;
 
+  // Retry (aliases used by DioClient)
+  static const int maxRetries = maxRetryAttempts;
+  static const int retryBaseDelayMs = retryDelayMs;
+
   // Discovery
   static const double minDetectionConfidence = 0.5;
   static const int detectionProbeTimeoutMs = 3000;
+
+  // Hive box names
+  static const String routersBoxName = 'routers';
+  static const String settingsBoxName = 'settings';
+  static const String sessionBoxName = 'sessions';
+  static const String credentialsBoxName = 'credentials';
+
+  // Dashboard
+  static const int dashboardRefreshSeconds = 30;
 }

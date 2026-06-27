@@ -1,5 +1,5 @@
-import '../../../../../../features/routers/domain/entities/wan_status.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/wan_status.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 
 /// ZTE WAN field constants.
 ///
@@ -50,12 +50,13 @@ final class ZteWanStatusModel {
         rawStatus == kZteConnectedValueAlt;
 
     return WanStatus(
+      connectionStatus: rawStatus ?? 'unknown',
       ipAddress: field(kZteFieldWanIpAddress),
-      ipv6Address: field(kZteFieldWanIpv6Address),
+      gateway: null,
       primaryDns: field(kZteFieldPrimaryDns),
       secondaryDns: field(kZteFieldSecondaryDns),
-      isConnected: isConnected,
-      rawConnectionStatus: rawStatus,
+      uptime: null,
+      protocol: null,
     );
   }
 }

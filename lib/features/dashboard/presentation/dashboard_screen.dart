@@ -1,22 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/theme/app_color_system.dart';
-import '../../../core/config/app_spacing.dart';
-import '../../../core/shared/widgets/app_page.dart';
-import '../../../core/shared/widgets/app_section_header.dart';
-import '../../../core/shared/widgets/commander_card.dart';
-import '../../../core/shared/widgets/metric_tile.dart';
-import '../../../core/shared/widgets/responsive_grid.dart';
-import '../../../l10n/l10n.dart';
+import 'package:router_commander_ai/app/theme/app_color_system.dart';
+import 'package:router_commander_ai/core/config/app_spacing.dart';
+import 'package:router_commander_ai/core/shared/widgets/app_page.dart';
+import 'package:router_commander_ai/core/shared/widgets/app_section_header.dart';
+import 'package:router_commander_ai/core/shared/widgets/commander_card.dart';
+import 'package:router_commander_ai/core/shared/widgets/metric_tile.dart';
+import 'package:router_commander_ai/core/shared/widgets/responsive_grid.dart';
+import 'package:router_commander_ai/l10n/l10n.dart';
+import 'package:router_commander_ai/features/dashboard/application/dashboard_notifier.dart';
+import 'package:router_commander_ai/features/routers/presentation/providers/router_session_notifier.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
+  String _formatUptime(Duration? uptime) {
+    if (uptime == null || uptime.inSeconds == 0) return '-';
+    final hours = uptime.inHours;
+    final minutes = (uptime.inMinutes % 60);
+    return '${hours}h ${minutes}m';
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+
+    final connectionState = ref.watch(routerSessionNotifierProvider);
+    final dashboardAsyncValue = ref.watch(dashboardNotifierProvider);
+
+    final dashboardState = dashboardAsyncValue.value;
+
+    final String routerStatusValue = connectionState.whenOrNull(
+      connected: (_) => dashboardState?.deviceInfo.modelName ?? l10n.connected,
+      connecting: () => l10n.connecting,
+      failed: (_) => l10n.connectionFailed,
+    ) ?? l10n.noRouterConnected;
+
+    final String wanIpValue = dashboardState?.wanStatus.ipAddress ?? l10n.wanIpNotAvailable;
+    final String activeDevicesValue = dashboardState?.connectedDevicesCount.toString() ?? l10n.notMeasured;
+    final String uptimeValue = _formatUptime(dashboardState?.deviceInfo.uptime);
 
     return AppPage(
       slivers: [
@@ -61,59 +86,60 @@ class DashboardScreen extends StatelessWidget {
             children: [
               MetricTile(
                 label: l10n.routerStatus,
-                value: l10n.noRouterConnected,
+                value: routerStatusValue,
                 icon: Icons.router_rounded,
                 accentColor: AppColorSystem.sky,
               ),
               MetricTile(
-                label: l10n.wifiHealth,
-                value: l10n.awaitingNetworkScan,
-                icon: Icons.wifi_rounded,
+                label: l10n.wanIp,
+                value: wanIpValue,
+                icon: Icons.public_rounded,
                 accentColor: AppColorSystem.mint,
               ),
               MetricTile(
-                label: l10n.security,
-                value: l10n.baselineReady,
-                icon: Icons.shield_rounded,
+                label: l10n.activeDevices,
+                value: activeDevicesValue,
+                icon: Icons.devices_rounded,
                 accentColor: AppColorSystem.violet,
               ),
               MetricTile(
-                label: l10n.speedTest,
-                value: l10n.notMeasured,
-                icon: Icons.speed_rounded,
+                label: l10n.uptime,
+                value: uptimeValue,
+                icon: Icons.timer_rounded,
                 accentColor: AppColorSystem.coral,
               ),
             ],
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-        SliverToBoxAdapter(
-          child: CommanderCard(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.insights_rounded, color: colorScheme.primary),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.foundationReadyTitle,
-                        style: textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        l10n.foundationReadyMessage,
-                        style: textTheme.bodyLarge,
-                      ),
-                    ],
+        if (dashboardState == null)
+          SliverToBoxAdapter(
+            child: CommanderCard(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded, color: colorScheme.primary),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.noRouterConnected,
+                          style: textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          l10n.dashboardEmptyStateMessage,
+                          style: textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
       ],
     );
   }

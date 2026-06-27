@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 
-import '../../../../../core/errors/app_exception.dart';
-import '../../../domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
 import 'auth/zte_authentication_strategy.dart';
 
 /// Concrete [ZteHttpClient] implementation backed by [Dio].
@@ -13,7 +13,7 @@ import 'auth/zte_authentication_strategy.dart';
 /// - Maps Dio exceptions to typed [AppException] subclasses
 /// - Extracts `Set-Cookie` from response headers for auth flows
 final class ZteDioHttpClient implements ZteHttpClient {
-  const ZteDioHttpClient({required Dio dio}) : _dio = dio;
+  const ZteDioHttpClient({required this._dio});
 
   final Dio _dio;
 

@@ -9,7 +9,7 @@ sealed class Failure {
   final String message;
 
   @override
-  String toString() => '${runtimeType}: $message';
+  String toString() => '$runtimeType: $message';
 }
 
 final class NetworkFailure extends Failure {
@@ -69,4 +69,6 @@ Failure failureFromException(AppException e) => switch (e) {
           RouterErrorFailure(message: message, code: routerCode),
       UnsupportedOperationException(:final message) =>
           UnknownFailure(message: message),
+      UnknownException(:final message) =>
+          UnknownFailure(message: message, cause: e),
     };

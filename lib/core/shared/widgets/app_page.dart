@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../config/app_breakpoints.dart';
-import '../../config/app_spacing.dart';
+import 'package:router_commander_ai/core/config/app_breakpoints.dart';
+import 'package:router_commander_ai/core/config/app_spacing.dart';
 
 class AppPage extends StatelessWidget {
   const AppPage({

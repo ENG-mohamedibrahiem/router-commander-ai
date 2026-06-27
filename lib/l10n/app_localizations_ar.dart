@@ -143,8 +143,54 @@ class AppLocalizationsAr extends AppLocalizations {
   String get language => 'اللغة';
 
   @override
-  String get english => 'English';
+  String get english => 'الإنجليزية';
 
   @override
   String get arabic => 'العربية';
+
+  @override
+  String get wanIp => 'عنوان WAN IP';
+
+  @override
+  String get wanIpNotAvailable => 'غير متوفر';
+
+  @override
+  String get connected => 'متصل';
+
+  @override
+  String get connecting => 'جاري الاتصال...';
+
+  @override
+  String get connectionFailed => 'فشل الاتصال';
+
+  @override
+  String get uptime => 'مدة التشغيل';
+
+  @override
+  String get activeDevices => 'الأجهزة النشطة';
+
+  @override
+  String get dashboardEmptyStateMessage =>
+      'يرجى الاتصال بجهاز راوتر من علامة تبويب الراوترات لعرض الإحصائيات الحية.';
+
+  @override
+  String get addRouterTitle => 'إضافة راوتر';
+
+  @override
+  String get routerNameLabel => 'اسم الراوتر';
+
+  @override
+  String get ipAddressLabel => 'عنوان IP';
+
+  @override
+  String get usernameLabel => 'اسم المستخدم';
+
+  @override
+  String get passwordLabel => 'كلمة المرور';
+
+  @override
+  String get saveAndConnect => 'حفظ واتصال';
+
+  @override
+  String get connect => 'اتصال';
 }

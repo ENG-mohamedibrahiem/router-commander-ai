@@ -1,14 +1,14 @@
-import '../../../../../domain/entities/router_credentials.dart';
-import '../../../../../domain/entities/router_endpoint.dart';
-import '../../../../../domain/entities/router_model.dart';
-import '../../../../../domain/entities/router_session.dart';
-import '../../../../../../core/errors/app_exception.dart';
-import '../../../../../../core/errors/failure.dart';
-import '../../../../../../core/protocol/protocol_classification.dart';
-import '../../../../../../core/protocol/protocol_logger.dart';
-import '../../../../../../core/utils/result.dart';
-import '../protocol/zte_auth_variant.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_credentials.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
+import 'package:router_commander_ai/core/errors/failure.dart';
+import 'package:router_commander_ai/core/protocol/protocol_classification.dart';
+import 'package:router_commander_ai/core/protocol/protocol_logger.dart';
+import 'package:router_commander_ai/core/utils/result.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_auth_variant.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 import 'zte_password_hasher.dart';
 import 'zte_session_extractor.dart';
 
@@ -62,14 +62,11 @@ final class ZtePostResult {
 /// This class is stateless. Create a new instance per connection attempt.
 final class ZteAuthenticationStrategy {
   const ZteAuthenticationStrategy({
-    required ZteHttpClient httpClient,
-    required ZtePasswordHasher passwordHasher,
-    required ZteSessionExtractor sessionExtractor,
-    required ProtocolLogger logger,
-  })  : _httpClient = httpClient,
-        _passwordHasher = passwordHasher,
-        _sessionExtractor = sessionExtractor,
-        _logger = logger;
+    required this._httpClient,
+    required this._passwordHasher,
+    required this._sessionExtractor,
+    required this._logger,
+  });
 
   final ZteHttpClient _httpClient;
   final ZtePasswordHasher _passwordHasher;

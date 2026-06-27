@@ -71,7 +71,7 @@ const _cookieZsidn = 'zsidn=xyz789uvw012; Path=/; HttpOnly';
 // ---------------------------------------------------------------------------
 
 void main() {
-  final endpoint = RouterEndpoint.fromHost('192.168.0.1');
+  final endpoint = const RouterEndpoint(host: '192.168.0.1', port: 80, useHttps: false);
   final model = RouterModel(
     brand: RouterBrand.zte,
     modelName: 'MF297D',
@@ -86,8 +86,8 @@ void main() {
         httpClient: client,
         passwordHasher: const ZtePasswordHasher(),
         sessionExtractor:
-            ZteSessionExtractor(logger: const SilentProtocolLogger()),
-        logger: const SilentProtocolLogger(),
+            ZteSessionExtractor(logger: const ProtocolLogger()),
+        logger: const ProtocolLogger(),
       );
 
   // ── Happy path: sha256Chained + stok ─────────────────────────────────────

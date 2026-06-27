@@ -1,9 +1,9 @@
-import '../../../../../domain/entities/router_endpoint.dart';
-import '../../../../../domain/entities/router_model.dart';
-import '../../../../../domain/entities/router_session.dart';
-import '../../../../../../core/errors/app_exception.dart';
-import '../../../../../../core/protocol/protocol_logger.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_model.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
+import 'package:router_commander_ai/core/errors/app_exception.dart';
+import 'package:router_commander_ai/core/protocol/protocol_logger.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 
 /// Extracts a [RouterSession] from ZTE HTTP response cookies.
 ///
@@ -14,8 +14,7 @@ import '../protocol/zte_protocol_constants.dart';
 /// Both names are VERIFIED from hardware observations.
 /// The extractor tries both and logs which one was found.
 final class ZteSessionExtractor {
-  const ZteSessionExtractor({required ProtocolLogger logger})
-      : _logger = logger;
+  const ZteSessionExtractor({required this._logger});
 
   final ProtocolLogger _logger;
 

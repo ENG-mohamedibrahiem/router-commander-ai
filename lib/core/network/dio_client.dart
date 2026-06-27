@@ -83,17 +83,15 @@ class DioClient {
         DioExceptionType.receiveTimeout =>
           TimeoutException(
             message: 'Request timed out: ${e.requestOptions.path}',
-            statusCode: e.response?.statusCode,
           ),
         DioExceptionType.badResponse => e.response?.statusCode == 401
             ? AuthException(
                 message: 'Authentication failed',
-                statusCode: 401,
               )
-            : NetworkException(
+            : HttpStatusException(
                 message:
                     'HTTP ${e.response?.statusCode}: ${e.requestOptions.path}',
-                statusCode: e.response?.statusCode,
+                statusCode: e.response?.statusCode ?? 500,
               ),
         DioExceptionType.connectionError => NetworkException(
             message: 'Cannot connect to router: ${e.requestOptions.baseUrl}',

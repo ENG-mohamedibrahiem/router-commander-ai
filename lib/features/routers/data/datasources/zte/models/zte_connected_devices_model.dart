@@ -1,5 +1,5 @@
-import '../../../../../../features/routers/domain/entities/connected_device.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/connected_device.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 
 /// ZTE connected-devices field constants.
 ///
@@ -43,10 +43,12 @@ final class ZteConnectedDevicesModel {
       if (mac.isEmpty && ip.isEmpty) continue;
       devices.add(
         ConnectedDevice(
-          hostname: _nullIfEmpty(parts[_kIdxHostname].trim()),
+          name: _nullIfEmpty(parts[_kIdxHostname].trim()) ?? 'Unknown',
           macAddress: _nullIfEmpty(mac),
           ipAddress: _nullIfEmpty(ip),
-          connectionType: _nullIfEmpty(parts[_kIdxConnType].trim()),
+          interfaceType: _nullIfEmpty(parts[_kIdxConnType].trim()) ?? 'unknown',
+          isActive: true,
+          leaseExpiresAt: null,
         ),
       );
     }

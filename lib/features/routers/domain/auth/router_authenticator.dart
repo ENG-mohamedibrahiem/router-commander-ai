@@ -1,6 +1,6 @@
-import '../entities/router_credentials.dart';
-import '../entities/router_endpoint.dart';
-import '../entities/router_session.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_credentials.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_endpoint.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_session.dart';
 
 /// Domain contract for any router authentication strategy.
 abstract interface class RouterAuthenticator {

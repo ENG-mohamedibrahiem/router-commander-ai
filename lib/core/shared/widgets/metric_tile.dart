@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../config/app_spacing.dart';
+import 'package:router_commander_ai/core/config/app_spacing.dart';
 import 'commander_card.dart';
 
 class MetricTile extends StatelessWidget {
@@ -9,6 +9,7 @@ class MetricTile extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.accentColor,
+    this.onTap,
     super.key,
   });
 
@@ -16,6 +17,7 @@ class MetricTile extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color accentColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +25,7 @@ class MetricTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return CommanderCard(
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -148,4 +148,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get arabic => 'Arabic';
+
+  @override
+  String get wanIp => 'WAN IP';
+
+  @override
+  String get wanIpNotAvailable => 'Not available';
+
+  @override
+  String get connected => 'Connected';
+
+  @override
+  String get connecting => 'Connecting...';
+
+  @override
+  String get connectionFailed => 'Connection failed';
+
+  @override
+  String get uptime => 'Uptime';
+
+  @override
+  String get activeDevices => 'Active devices';
+
+  @override
+  String get dashboardEmptyStateMessage =>
+      'Please connect to a router from the Routers tab to view real-time statistics.';
+
+  @override
+  String get addRouterTitle => 'Add Router';
+
+  @override
+  String get routerNameLabel => 'Profile Name';
+
+  @override
+  String get ipAddressLabel => 'IP Address';
+
+  @override
+  String get usernameLabel => 'Username';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get saveAndConnect => 'Save & Connect';
+
+  @override
+  String get connect => 'Connect';
 }

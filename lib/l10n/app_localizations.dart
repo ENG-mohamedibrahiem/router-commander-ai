@@ -361,6 +361,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Arabic'**
   String get arabic;
+
+  /// No description provided for @wanIp.
+  ///
+  /// In en, this message translates to:
+  /// **'WAN IP'**
+  String get wanIp;
+
+  /// No description provided for @wanIpNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get wanIpNotAvailable;
+
+  /// No description provided for @connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connected;
+
+  /// No description provided for @connecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting...'**
+  String get connecting;
+
+  /// No description provided for @connectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get connectionFailed;
+
+  /// No description provided for @uptime.
+  ///
+  /// In en, this message translates to:
+  /// **'Uptime'**
+  String get uptime;
+
+  /// No description provided for @activeDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Active devices'**
+  String get activeDevices;
+
+  /// No description provided for @dashboardEmptyStateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please connect to a router from the Routers tab to view real-time statistics.'**
+  String get dashboardEmptyStateMessage;
+
+  /// No description provided for @addRouterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Router'**
+  String get addRouterTitle;
+
+  /// No description provided for @routerNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Name'**
+  String get routerNameLabel;
+
+  /// No description provided for @ipAddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IP Address'**
+  String get ipAddressLabel;
+
+  /// No description provided for @usernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameLabel;
+
+  /// No description provided for @passwordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// No description provided for @saveAndConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Connect'**
+  String get saveAndConnect;
+
+  /// No description provided for @connect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connect;
 }
 
 class _AppLocalizationsDelegate

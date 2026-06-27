@@ -1,19 +1,27 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:router_commander_ai/core/services/local_storage_service.dart';
+import 'package:router_commander_ai/features/routers/data/factories/router_adapter_factory_impl.dart';
+import 'package:router_commander_ai/features/routers/data/discovery/network_scanner_service.dart';
+import 'package:router_commander_ai/features/routers/data/repositories/hive_router_profile_repository.dart';
+import 'package:router_commander_ai/features/routers/data/repositories/router_repository_impl.dart';
+import 'package:router_commander_ai/features/routers/data/services/hive_session_storage_service.dart';
+import 'package:router_commander_ai/features/routers/domain/factories/router_adapter_factory.dart';
+import 'package:router_commander_ai/features/routers/domain/repositories/router_profile_repository.dart';
+import 'package:router_commander_ai/features/routers/domain/repositories/router_repository.dart';
+import 'package:router_commander_ai/features/routers/domain/services/session_storage_contract.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../../../../core/network/network_client_provider.dart';
-import '../../../../core/protocol/protocol_logger.dart';
-import '../../domain/factories/router_adapter_factory.dart';
-import '../../domain/repositories/router_repository.dart';
-import '../../domain/services/session_storage_contract.dart';
-import '../factories/router_adapter_factory_impl.dart';
-import '../repositories/router_repository_impl.dart';
-import '../services/hive_session_storage_service.dart';
+import 'package:router_commander_ai/core/network/network_client_provider.dart';
+import 'package:router_commander_ai/core/protocol/protocol_logger.dart';
 
 // ---------------------------------------------------------------------------
 // Infrastructure dependencies
 // ---------------------------------------------------------------------------
+
+final networkScannerServiceProvider = Provider<NetworkScannerService>((ref) {
+  return NetworkScannerService();
+});
 
 /// Provides the [Dio] instance via [networkClientProvider].
 /// Declared here as a typed alias for clarity.
@@ -72,4 +80,12 @@ final routerRepositoryProvider = Provider<RouterRepository>((ref) {
     factory: ref.watch(routerAdapterFactoryProvider),
     sessionStorage: ref.watch(sessionStorageProvider),
   );
+});
+
+// ---------------------------------------------------------------------------
+// Profile Repository
+// ---------------------------------------------------------------------------
+
+final routerProfileRepositoryProvider = Provider<RouterProfileRepository>((ref) {
+  return HiveRouterProfileRepository(LocalStorageService.instance);
 });

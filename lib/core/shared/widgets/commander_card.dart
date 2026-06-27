@@ -5,12 +5,14 @@ class CommanderCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.gradient,
+    this.onTap,
     super.key,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Gradient? gradient;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +28,12 @@ class CommanderCard extends StatelessWidget {
         color: gradient == null ? cardTheme.color : Colors.transparent,
         shape: cardTheme.shape,
         clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: padding,
-          child: child,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: padding,
+            child: child,
+          ),
         ),
       ),
     );

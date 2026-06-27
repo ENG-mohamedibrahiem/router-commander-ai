@@ -1,6 +1,6 @@
-import '../../../../../../features/routers/domain/entities/router_brand.dart';
-import '../../../../../../features/routers/domain/entities/router_device_info.dart';
-import '../protocol/zte_protocol_constants.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_brand.dart';
+import 'package:router_commander_ai/features/routers/domain/entities/router_device_info.dart';
+import 'package:router_commander_ai/features/routers/data/datasources/zte/protocol/zte_protocol_constants.dart';
 
 /// ZTE field constants for device information.
 ///

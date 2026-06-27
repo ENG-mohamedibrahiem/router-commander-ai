@@ -2,6 +2,7 @@ import '../../../../core/utils/result.dart';
 import '../entities/router_brand.dart';
 import '../entities/router_detection_result.dart';
 import '../entities/router_endpoint.dart';
+import '../entities/router_model.dart';
 import '../factories/router_adapter_factory.dart';
 
 /// Domain service that discovers which router brand is at a given endpoint.
@@ -9,8 +10,7 @@ import '../factories/router_adapter_factory.dart';
 /// Tries each registered adapter in priority order and returns the first
 /// successful detection with confidence > [_kMinConfidence].
 final class RouterDiscoveryService {
-  const RouterDiscoveryService({required RouterAdapterFactory factory})
-      : _factory = factory;
+  const RouterDiscoveryService({required this._factory});
 
   final RouterAdapterFactory _factory;
 
@@ -27,7 +27,7 @@ final class RouterDiscoveryService {
       try {
         final adapter = _factory.adapterFor(brand);
         final result = await adapter.detect(endpoint);
-        if (result.isCompatible && result.confidence >= _kMinConfidence) {
+        if (result.isSupported && result.confidence >= _kMinConfidence) {
           return Success(result);
         }
       } catch (_) {
@@ -35,10 +35,12 @@ final class RouterDiscoveryService {
         continue;
       }
     }
-    return const Success(
+    return Success(
       RouterDetectionResult(
-        isCompatible: false,
+        endpoint: endpoint,
+        model: RouterModel.unknown,
         confidence: 0.0,
+        evidence: const [],
       ),
     );
   }
@@ -49,11 +51,9 @@ final class RouterDiscoveryService {
   Future<RouterBrand> detectBrand(RouterEndpoint endpoint) async {
     final result = await discover(endpoint);
     final detection = result.valueOrNull;
-    if (detection == null || !detection.isCompatible) {
+    if (detection == null || !detection.isSupported) {
       return RouterBrand.unknown;
     }
-    final raw = detection.detectedBrand;
-    if (raw == null) return RouterBrand.unknown;
-    return RouterBrand.fromString(raw);
+    return detection.model.brand;
   }
 }

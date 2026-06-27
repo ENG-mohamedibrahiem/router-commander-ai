@@ -1,3 +1,5 @@
+import 'package:responsive_framework/responsive_framework.dart';
+
 /// Responsive breakpoints — single source of truth.
 /// Used by ResponsiveFramework and any manual MediaQuery checks.
 abstract final class AppBreakpoints {
@@ -15,4 +17,14 @@ abstract final class AppBreakpoints {
 
   /// Navigation rail appears at or above this width.
   static const double railBreakpoint = medium;
+
+  static const double maxContentWidth = 1200;
+  static const double railWidth = 72;
+
+  static const List<Breakpoint> responsiveBreakpoints = [
+    Breakpoint(start: 0, end: compact, name: MOBILE),
+    Breakpoint(start: compact, end: medium, name: TABLET),
+    Breakpoint(start: medium, end: expanded, name: DESKTOP),
+    Breakpoint(start: expanded, end: double.infinity, name: '4K'),
+  ];
 }

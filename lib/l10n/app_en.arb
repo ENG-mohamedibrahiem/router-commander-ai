@@ -43,5 +43,20 @@
   "darkTheme": "Dark",
   "language": "Language",
   "english": "English",
-  "arabic": "Arabic"
+  "arabic": "Arabic",
+  "wanIp": "WAN IP",
+  "wanIpNotAvailable": "Not available",
+  "connected": "Connected",
+  "connecting": "Connecting...",
+  "connectionFailed": "Connection failed",
+  "uptime": "Uptime",
+  "activeDevices": "Active devices",
+  "dashboardEmptyStateMessage": "Please connect to a router from the Routers tab to view real-time statistics.",
+  "addRouterTitle": "Add Router",
+  "routerNameLabel": "Profile Name",
+  "ipAddressLabel": "IP Address",
+  "usernameLabel": "Username",
+  "passwordLabel": "Password",
+  "saveAndConnect": "Save & Connect",
+  "connect": "Connect"
 }

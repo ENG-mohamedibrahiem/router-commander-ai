@@ -1,4 +1,4 @@
-import '../errors/failure.dart';
+import 'package:router_commander_ai/core/errors/failure.dart';
 
 /// Sealed [Result] type — domain contract for all async operations.
 ///
