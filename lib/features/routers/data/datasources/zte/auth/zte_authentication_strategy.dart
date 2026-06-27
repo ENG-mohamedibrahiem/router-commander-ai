@@ -279,6 +279,21 @@ final class ZteAuthenticationStrategy {
 
       return Success(
           _ProbeData(variant: effectiveVariant, ldToken: ldToken));
+    } on HttpStatusException catch (e) {
+      if (e.statusCode == 404) {
+        // classification: ASSUMED — Many ZTE routers (e.g. H188A) do not have this endpoint.
+        // We fallback to sha256Simple without an ldToken.
+        _logger.logFallback(
+          adapter: _adapter,
+          operation: 'capability_probe',
+          classification: ProtocolClassification.assumed,
+          reason: 'Endpoint returned 404. Falling back to sha256Simple without LD token.',
+          fallbackUsed: ZteAuthVariant.sha256Simple.label,
+        );
+        return const Success(
+            _ProbeData(variant: ZteAuthVariant.sha256Simple, ldToken: null));
+      }
+      return ResultFailure(failureFromException(e));
     } on AppException catch (e) {
       return ResultFailure(failureFromException(e));
     } catch (e) {

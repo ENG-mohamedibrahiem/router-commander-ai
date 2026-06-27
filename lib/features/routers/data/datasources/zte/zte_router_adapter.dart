@@ -82,6 +82,21 @@ final class ZteRouterAdapter implements RouterAdapter {
         confidence: hasCapability ? 0.95 : 0.0,
         evidence: hasCapability ? ['ZTE capability field found'] : [],
       );
+    } on HttpStatusException catch (e) {
+      if (e.statusCode == 404) {
+        return RouterDetectionResult(
+          endpoint: endpoint,
+          model: supportedModel,
+          confidence: 0.6,
+          evidence: const ['Endpoint returned 404, assuming older ZTE model (e.g. H188A)'],
+        );
+      }
+      return RouterDetectionResult(
+        endpoint: endpoint,
+        model: RouterModel.unknown,
+        confidence: 0.0,
+        evidence: const [],
+      );
     } catch (_) {
       return RouterDetectionResult(
         endpoint: endpoint,

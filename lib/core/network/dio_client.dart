@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:router_commander_ai/core/config/app_constants.dart';
 import 'package:router_commander_ai/core/errors/app_exception.dart';
 
@@ -27,6 +29,14 @@ class DioClient {
         validateStatus: (_) => true,
       ),
     )
+      ..httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.badCertificateCallback =
+              (X509Certificate cert, String host, int port) => true;
+          return client;
+        },
+      )
       ..interceptors.add(_RetryInterceptor(_dio!))
       ..interceptors.add(LogInterceptor(
         requestBody: false,
